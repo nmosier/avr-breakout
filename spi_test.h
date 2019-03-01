@@ -40,46 +40,25 @@
 #define SSD1306_ACTIVATE_SCROLL                      0x2F ///< Start scroll
 #define SSD1306_SET_VERTICAL_SCROLL_AREA             0xA3 ///< Set scroll range
 
+/* display-specific pins */
+#define SSD1306_DC      PD6
+#define SSD1306_DC_PORT PORTD
+#define SSD1306_DC_PIN  PIND
+#define SSD1306_DC_DDR  DDRD
+
+#define SSD1306_RST      PD5
+#define SSD1306_RST_PORT PORTD
+#define SSD1306_RST_PIN  PIND
+#define SSD1306_RST_DDR  DDRD
+
+#define SSD1306_COMMAND (SSD1306_DC_PORT &= ~(1 << SSD1306_DC))
+#define SSD1306_DATA    (SSD1306_DC_PORT |= (1 << SSD1306_DC))
+
+#define SLAVE_SELECT (SPI_SS_PORT &= ~(1 << SPI_SS))
+#define SLAVE_DESELECT (SPI_SS_PORT |= (1 << SPI_SS))
+
+
 /* general util macros */
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))
-
-/* pin util macros */
-#define MMIO_OFFSET 0x20
-#define BANKS_BASE (0x03 + MMIO_OFFSET)
-
-#define BANKB      0
-#define BANKC      1
-#define BANKD      2
-
-#define PINS_OFFSET  0x0
-#define DDR_OFFSET  0x1
-#define PORT_OFFSET 0x2
-
-/* PORT: given bank, get port address */
-#define PINS(bank) ((volatile uint8_t *)                       \
-                    (BANKS_BASE + (bank * 3) + PINS_OFFSET))
-#define DDR(bank)                                                 \
-   ((volatile uint8_t *) (BANKS_BASE + (bank * 3) + DDR_OFFSET))
-#define PORT(bank)                                                \
-   ((volatile uint8_t *) (BANKS_BASE + (bank * 3) + PORT_OFFSET))
-
-#define OUTPUT(bank, mask) (*DDR(bank) |= mask)
-#define INPUT(bank, mask) (*DDR(bank) &= ~mask)
-
-#define HIGH(bank, mask) (*PORT(bank) |= mask)
-#define LOW(bank, mask) (*PORT(bank) &= ~mask)
-
-#define SELECT(cs_bank, cs_mask)   LOW(cs_bank, cs_mask)
-#define DESELECT(cs_bank, cs_mask) HIGH(cs_bank, cs_mask)
-
-#define COMMAND(dc_bank, dc_mask) LOW(dc_bank, dc_mask)
-#define DATA(dc_bank, dc_mask) HIGH(dc_bank, dc_mask)
-
-/* types */
-struct display_pins {
-   uint8_t mosi_bank, clk_bank, cs_bank, dc_bank, rst_bank;
-   uint8_t mosi_mask, clk_mask, cs_mask, dc_mask, rst_mask;
-};
-
 
 #endif

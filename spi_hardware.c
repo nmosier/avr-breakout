@@ -8,27 +8,19 @@
 /* spi_writeb: write single byte to SPI */
 void spi_writeb(uint8_t data) {
    SPDR = data;
-   //while (!(SPSR & (1 << SPIF))) {}
-   loop_until_bit_is_set(SPSR, SPIF);
+   while (!(SPSR & (1 << SPIF))) {}
 }
 
 /* spi_write: write buffer using SPI */
-void spi_write(const uint8_t *buf, unsigned int len,
-               const struct display_pins *pins) {
+void spi_write(const uint8_t *buf, unsigned int len) {
    const uint8_t *end = buf + len;
    for (const uint8_t *it = buf; it < end; ++it) {
       spi_writeb(*it);
    }
 }
 
-void display_config(const struct display_pins *pins) {
-   /* directions */
-   OUTPUT(pins->mosi_bank, pins->mosi_mask);
-   OUTPUT(pins->clk_bank, pins->clk_mask);
-   OUTPUT(pins->cs_bank, pins->cs_mask);
-   OUTPUT(pins->dc_bank, pins->dc_mask);
-   OUTPUT(pins->rst_bank, pins->rst_mask);
-
+void display_config() {
+   /* config SPI pins*/
    SPI_SS_DDR |= (1 << SPI_SS);
    SPI_SS_PORT |= (1 << SPI_SS);
    SPI_MOSI_DDR |= (1 << SPI_MOSI);
@@ -38,21 +30,22 @@ void display_config(const struct display_pins *pins) {
    SPCR |= (1 << MSTR);
    SPCR |= (1 << SPE);
    SPI_SCK_PORT &= ~(1 << SPI_SCK);
-   
-   /* set output values */
-   LOW(pins->clk_bank, pins->clk_mask);
 
-   /* reset */
-   HIGH(pins->rst_bank, pins->rst_mask);
+   /* config SSD1306 pins */
+   SSD1306_DC_DDR |= (1 << SSD1306_DC);
+   SSD1306_RST_DDR |= (1 << SSD1306_RST);
+   
+   /* reset display */
+   SSD1306_RST_PORT |= (1 << SSD1306_RST);
    _delay_ms(1);
-   LOW(pins->rst_bank, pins->rst_mask);
+   SSD1306_RST_PORT &= ~(1 << SSD1306_RST);
    _delay_ms(10);
-   HIGH(pins->rst_bank, pins->rst_mask);
+   SSD1306_RST_PORT |= (1 << SSD1306_RST);
 }
 
-void display_init(const struct display_pins *pins) {
-   SELECT(pins->cs_bank, pins->cs_mask);
-   COMMAND(pins->dc_bank, pins->dc_mask);
+void display_init() {
+   SLAVE_SELECT;
+   SSD1306_COMMAND;
    
    /* write commands */
    uint8_t cmds[] = {SSD1306_DISPLAYOFF,
@@ -60,7 +53,7 @@ void display_init(const struct display_pins *pins) {
                      SSD1306_SETMULTIPLEX, 0x3F - 1,
                      SSD1306_SETDISPLAYOFFSET, 0x0,
                      SSD1306_SETSTARTLINE | 0x0,
-                     SSD1306_CHARGEPUMP, 0x14, // internal (?)
+                     SSD1306_CHARGEPUMP, 0x14,
                      SSD1306_MEMORYMODE, 0x00,
                      SSD1306_SEGREMAP | 0x1,
                      SSD1306_COMSCANDEC,
@@ -77,64 +70,80 @@ void display_init(const struct display_pins *pins) {
       spi_writeb(*cmd_it);
    }
 
-   DESELECT(pins->cs_bank, pins->cs_mask);
+   SLAVE_DESELECT;
 }
 
-void display_checkerboard(const struct display_pins *pins) {
-   SELECT(pins->cs_bank, pins->cs_mask);
+void display_checkerboard() {
+   SLAVE_SELECT;
 
    /* commands: set cursor to (0,0) */
-   COMMAND(pins->dc_bank, pins->dc_mask);
+   SSD1306_COMMAND;
    const uint8_t cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
                            SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH - 1};
-   spi_write(cmds, LEN(cmds), pins);
+   spi_write(cmds, LEN(cmds));
 
    /* data: checkerboard */
-   DATA(pins->dc_bank, pins->dc_mask);
+   SSD1306_DATA;
    uint16_t count = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
    while (count--) {
       spi_writeb(0xaa);
    }
    
-   DESELECT(pins->cs_bank, pins->cs_mask);
+   SLAVE_DESELECT;
 }
 
-void display_clear(uint8_t pix, const struct display_pins *pins) {
-   SELECT(pins->cs_bank, pins->cs_mask);
-   COMMAND(pins->dc_bank, pins->dc_mask);
+void display_clear(uint8_t pix) {
+   SLAVE_SELECT;
+   SSD1306_COMMAND;
    const uint8_t cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
                            SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH-1};
-   spi_write(cmds, LEN(cmds), pins);
+   spi_write(cmds, LEN(cmds));
 
-   DATA(pins->dc_bank, pins->dc_mask);
+   SSD1306_DATA;
    uint16_t count = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
    while (count--) {
       spi_writeb(pix);
    }
 
-   DESELECT(pins->cs_bank, pins->cs_mask);
+   SLAVE_DESELECT;
 }
 
+static const uint8_t letterE[] = {0b00000000,
+                                  0b01111111,
+                                  0b01001001,
+                                  0b01001001,
+                                  0b01001001,
+                                  0b00000000,
+                                  0b01111111,
+                                  0b00010001,
+                                  0b00110001,
+                                  0b01001110,
+                                  0b00000000,
+                                  0b01111110,
+                                  0b00000001,
+                                  0b00011110,
+                                  0b00000001,
+                                  0b01111110,
+                                  0b00000000,
+                                  0b01111110,
+                                  0b00010001,
+                                  0b00010001,
+                                  0b01111110,
+                                  0b00000000};
+                                  
+
 int main(void) {
-   /* test */
-   struct display_pins pins = {.mosi_bank = BANKB, .mosi_mask = 0x01,
-                               .clk_bank = BANKD, .clk_mask = 0x80,
-                               .dc_bank = BANKD, .dc_mask = 0x40,
-                               .rst_bank = BANKD, .rst_mask = 0x20,
-                               .cs_bank = BANKB, .cs_mask = 0x04};
+   display_config();
+   display_init();
+   display_clear(0x00);
 
-   display_config(&pins);
-   display_init(&pins);
-   //display_checkerboard(&pins);
-   display_clear(0x00, &pins);
-
-   SELECT(pins.cs_bank, pins.cs_mask);
-   COMMAND(pins.dc_bank, pins.dc_mask);
+   SLAVE_SELECT;
+   SSD1306_COMMAND;
    const uint8_t cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
                            SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH-1};
-   spi_write(cmds, LEN(cmds), &pins);
+   spi_write(cmds, LEN(cmds));
    
-   DATA(pins.dc_bank, pins.dc_mask);
+   SSD1306_DATA;
    uint16_t count = DISPLAY_WIDTH;
    uint8_t pix = 0xf0;
    while (count--) {
@@ -145,8 +154,19 @@ int main(void) {
       }
       spi_writeb(pix);
    }
+   SLAVE_DESELECT;
+
+   SLAVE_SELECT;
+   SSD1306_COMMAND;
+   const uint8_t cmds2[] = {SSD1306_PAGEADDR, 0x2, 0xFF,
+                           SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH-1};
+   spi_write(cmds2, LEN(cmds));
    
-   display_clear(0xff, &pins);
+   SSD1306_DATA;
+   spi_write(letterE, LEN(letterE));
+   SLAVE_DESELECT;
+   
+   //display_clear(0xff, &pins);
    
    return 0;
 }
