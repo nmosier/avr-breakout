@@ -4,16 +4,19 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <util/delay.h>
 #include "SSD1306.h"
 #include "canvas.h"
 #include "paddle.h"
 #include "objects.h"
+#include "physics.h"
 
+void loop();
 
 int main(void) {
-   struct bounds bnds = {.crds = {.x = 0, .y = 0},
-                         .ext  = {.w = 8,  .h = 8}};
-   //uint8_t buf[64];
+   struct bounds bnds = {.crds = {.x = 5, .y = 2},
+                         .ext  = {.w = 6,  .h = 2}};
+   uint8_t buf[12];
    
    display_config(); // these names should really be swapped
    display_init();
@@ -21,27 +24,45 @@ int main(void) {
    
    /* set up grid */
    SLAVE_SELECT;
-   //grid_display_full();
+   canvas_display_full();
 
-   /* display paddle */
-   //paddle_display();
-
-   /* draw line */
-   
-   //canvas_getbuffer(buf, &bnds);
    /*
-   memset(buf, 0, 64);
-   canvas_draw_vertical(buf, &bnds, 0, 4, 60);
-   canvas_draw_vertical(buf, &bnds, 1, 0, 64);
+   SLAVE_SELECT;
    display_selectbnds(&bnds);
    canvas_getbuffer(buf, &bnds);
+   SLAVE_SELECT;
    SSD1306_DATA;
-   spi_write(buf, 64);
+   spi_write(buf, 12);
    */
-   //paddle_display();
-   canvas_display_full();
+   
+   while (1) {
+     loop();
+   }
    
    SLAVE_DESELECT;
    
    return 0;
+}
+
+void loop() {
+   /* update ball */
+   struct bounds update;
+   phys_ball_freebounce(&ball_pos, &ball_vel, &update);
+   
+   /* convert pixel update bounds to screen coordinates */
+
+   update.ext.h = (update.ext.h + (update.crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
+   update.crds.y /= 8;
+   
+   display_selectbnds(&update);
+   
+   /* draw update buffer */
+   uint8_t bufsize = update.ext.w * update.ext.h;
+   uint8_t buf[bufsize];
+
+   memset(buf, 0, bufsize);
+   canvas_getbuffer(buf, &update);
+   
+   SSD1306_DATA;
+   spi_write(buf, bufsize);
 }

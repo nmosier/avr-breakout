@@ -78,6 +78,7 @@ void display_clear(uint8_t pix);
 
 /* note: height & width must be nonzero
  * note: slave should be selected */
+#define DISPLAY_SELECT_IOBYTES 6
 inline void display_select(uint8_t page, uint8_t col, uint8_t height,
                            uint8_t width) {
    SSD1306_COMMAND;

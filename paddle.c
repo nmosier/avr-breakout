@@ -14,7 +14,7 @@ void paddle_display() {
    paddle_page = display_row2page(PADDLE_ROW);
    
    SLAVE_SELECT;
-   display_select(paddle_page, paddle_col, 1, PADDLE_WIDTH);
+   display_select(paddle_page, paddle_pos.crds.x, 1, paddle_pos.ext.w);
 
    SSD1306_DATA;
    for (uint8_t i = 0; i < PADDLE_WIDTH; ++i) {
@@ -33,13 +33,13 @@ void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
    paddle_page = display_row2page(PADDLE_ROW);
    buf_page = bnds->crds.y; // y is in pages
    if (paddle_page >= buf_page && paddle_page < buf_page + bnds->ext.h
-       && paddle_col + PADDLE_WIDTH > bnds->crds.x
-       && paddle_col < bnds->crds.x + bnds->ext.w) {
+       && paddle_pos.crds.x + paddle_pos.ext.w > bnds->crds.x
+       && paddle_pos.crds.x < bnds->crds.x + bnds->ext.w) {
       uint8_t onscreen_width, onscreen_left, onscreen_offset;
       
       /* find onscreen width of paddle */
-      onscreen_left = umax8(paddle_col, bnds->crds.x);
-      onscreen_width = umin8(paddle_col + PADDLE_WIDTH,
+      onscreen_left = umax8(paddle_pos.crds.x, bnds->crds.x);
+      onscreen_width = umin8(paddle_pos.crds.x + paddle_pos.ext.w,
                              bnds->crds.x + bnds->ext.w) - onscreen_left;
       onscreen_offset = onscreen_left - bnds->crds.x;
       

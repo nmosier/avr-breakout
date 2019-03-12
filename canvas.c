@@ -29,7 +29,7 @@ inline const uint8_t *grid_getsprite(uint8_t row, uint8_t col) {
    return grid_testblock(row, col) ? block_brick : block_empty;
 }
 
-void grid_display_block(uint8_t row, uint8_t col) {
+void grid_displayblock(uint8_t row, uint8_t col) {
    const uint8_t *sprite;
 
    sprite = grid_getsprite(row, col);
@@ -61,9 +61,32 @@ void grid_display_full() {
    SLAVE_DESELECT;
 }
 
+/* grid_display_layer: OR underlying grid to buffer.
+ * TODO: handle buffers that aren't aligned with grid (in x-axis).
+ */
 void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
+   #if 1
+   uint8_t col_begin, col_end, row_begin, row_end;
+
+   col_begin = bnds->crds.x;
+   col_end = col_begin + bnds->ext.w;
+   row_begin = bnds->crds.y;
+   row_end = row_begin + bnds->ext.h;
+   for (uint8_t row_it = row_begin; row_it < row_end; ++row_it) {
+      for (uint8_t col = col_begin; col < col_end;) {
+         const uint8_t *sprite = grid_getsprite(row_it, col / 8) + (col % 8);
+         uint8_t cnt = umin8(8 - (col % 8), col_end - col);
+         col += cnt;
+         for (; cnt > 0; --cnt) {
+            *(buf++) |= *(sprite++);
+         }
+         buf += cnt;
+      }
+   }
+
+   #else
    uint8_t rows, cols, row, col;
-   
+
    row = bnds->crds.y; // y is in pages, not pixels
    col = bnds->crds.x / 8;
    rows = bnds->ext.h; // h is in pages, not pixels
@@ -75,13 +98,15 @@ void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
          buf += 8;
       }
    }
+   #endif
 }
 
 
 //////// SCREEN BUFFER /////////
 
 struct graphics_layer graphics_layers[] =
-   {{grid_display_layer},
+   {
+    {grid_display_layer},
     {paddle_draw},
     {ball_draw},
    };
@@ -92,6 +117,7 @@ struct graphics_layer graphics_layers[] =
  * NOTE: will be stored in the same format as in the screen's internal buffer.
  * NOTE: needs to keep track of everything that can appear in the given area.
  *       Necessary because we can't use a dedicated screen buffer.
+ * TODO: inline.
  */
 
 void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds) {
@@ -141,6 +167,7 @@ void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,
    }
 }
 
+/* TODO: inline this. */
 void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
                            uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
    for (uint8_t dx = 0; dx < w; ++dx) {
@@ -183,8 +210,10 @@ void canvas_display_full() {
            col += CANVAS_DISPLAY_FULL_STEP) {
          bnds_block.crds.x = col;
 
+         memset(buf, 0, CANVAS_DISPLAY_FULL_STEP);
          canvas_getbuffer(buf, &bnds_block);
          spi_write(buf, CANVAS_DISPLAY_FULL_STEP);
       }
    }
 }
+

@@ -10,6 +10,6 @@
 #include "ball.h"
 
 void ball_draw(uint8_t *buf, const struct bounds *bnds) {
-   canvas_fill_rectangle(buf, bnds, ball_pos.x, ball_pos.y,
+   canvas_fill_rectangle(buf, bnds, ball_pos.crds.x, ball_pos.crds.y,
                          BALL_WIDTH, BALL_HEIGHT);
 }
