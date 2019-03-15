@@ -38,8 +38,6 @@ struct bounds_list {
 #define PROJ_FUNC_DIV 0
 enum proj_mode {PROJ_MODE_SHARP, PROJ_MODE_FUZZY};
 struct projection {
-   uint8_t fx: 1; // x function (mul./div.)
-   uint8_t fy: 1; // y function (mul./div.)
    uint8_t sx; // x scalar
    uint8_t sy; // y scalar
 };
@@ -112,8 +110,11 @@ void blist_insert(const struct bounds *bnds, struct bounds_list **blist);
 void blist_delete(struct bounds_list **blist);
 
 /////////// PROJECTIONS ///////////
-uint8_t project(const struct bounds *src, struct bounds *dst,
-             const struct projection *proj, enum proj_mode mode);
+uint8_t project_up(const struct bounds *src, struct bounds *dst,
+                   const struct projection *proj, enum proj_mode mode);
+uint8_t project_down(const struct bounds *src, struct bounds *dst,
+                     const struct projection *proj, enum proj_mode mode);
+
 
 #endif
 

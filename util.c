@@ -148,43 +148,34 @@ void blist_delete(struct bounds_list **blist) {
 
 //////////// PROJECTIONS ////////////
 
-// TODO: break `project' up into `project_down' and `project_up'
-
-/* project: project bounds from one coordinate space to another
- */
-uint8_t project(const struct bounds *src, struct bounds *dst,
-                const struct projection *proj, enum proj_mode mode) {
-
+uint8_t project_down(const struct bounds *src, struct bounds *dst,
+                     const struct projection *proj, enum proj_mode mode) {
    /* determine division mode */
    uint8_t (*div_crds)(uint8_t, uint8_t) = (mode == PROJ_MODE_SHARP) ? udivup8 : udivdwn8;
    uint8_t (*div_ext)(uint8_t, uint8_t) = (mode == PROJ_MODE_SHARP)  ? udivdwn8 : udivup8;
-   
-   /* x coords/extent */
-   if (proj->fx == PROJ_FUNC_MUL) {
-      /* multiply */
-      dst->crds.x = src->crds.x * proj->sx;
-      dst->ext.w = src->ext.w * proj->sx;
-   } else {
-      /* divide */
-      dst->crds.x = div_crds(src->crds.x, proj->sx);
-      dst->ext.w = div_ext(src->ext.w - (-src->crds.x % proj->sx), proj->sx);
-   }
 
-   /* y coords/extent */
-   if (proj->fy == PROJ_FUNC_MUL) {
-      /* multiply */
-      dst->crds.y = src->crds.y * proj->sy;
-      dst->ext.h = src->ext.h * proj->sy;
-   } else {
-      /* divide */
-      dst->crds.y = div_crds(src->crds.y, proj->sy);
-      dst->ext.h = div_ext(src->ext.h - (-src->crds.y % proj->sy), proj->sy);
-   }
+   /* divide x coords */
+   dst->crds.x = div_crds(src->crds.x, proj->sx);
+   dst->ext.w = div_ext(src->ext.w - (-src->crds.x % proj->sx), proj->sx);
 
-   /* check if projection is valid */
+   /* divide y coords */
+   dst->crds.y = div_crds(src->crds.y, proj->sy);
+   dst->ext.h = div_ext(src->ext.h - (-src->crds.y % proj->sy), proj->sy);
+
    return dst->ext.w && dst->ext.h;
 }
 
+/* NOTE: _mode_ is ignored. Kept for symmetry. */
+uint8_t project_up(const struct bounds *src, struct bounds *dst,
+                   const struct projection *proj, enum proj_mode mode) {
+   
+   dst->crds.x = src->crds.x * proj->sx;
+   dst->crds.y = src->crds.y * proj->sy;
+   dst->ext.w = src->ext.w * proj->sx;
+   dst->ext.h = src->ext.h * proj->sy;
+
+   return dst->ext.w && dst->ext.h;
+}
 
 
 uint8_t udivup8(uint8_t dividend, uint8_t divisor) {

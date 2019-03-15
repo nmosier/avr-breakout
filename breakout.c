@@ -52,18 +52,18 @@ void loop() {
    phys_ball_freebounce(&ball_pos, &ball_vel, &update);
    
    /* convert pixel update bounds to screen coordinates */
-   //project(&update, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
-   update.ext.h = (update.ext.h + (update.crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
-   update.crds.y /= 8;
+   project_down(&update, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
+   //update.ext.h = (update.ext.h + (update.crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
+   //update.crds.y /= 8;
    
-   display_selectbnds(&update);
+   display_selectbnds(&update_scrn);
    
    /* draw update buffer */
-   uint8_t bufsize = bounds_area(&update);
+   uint8_t bufsize = bounds_area(&update_scrn);
    uint8_t buf[bufsize];
 
    memset(buf, 0, bufsize);
-   canvas_getbuffer(buf, &update);
+   canvas_getbuffer(buf, &update_scrn);
    
    SSD1306_DATA;
    spi_write(buf, bufsize);

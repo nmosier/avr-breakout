@@ -7,11 +7,8 @@
 #include "util.h"
 
 const struct projection g_proj_pix2scrn =
-   {.fx = PROJ_FUNC_DIV,
-    .fy = PROJ_FUNC_MUL,
-    .sx = 1,
-    .sy = 8
-   };
+   {.sx = 1,
+    .sy = 8};
 
 void display_config() {
    /* config SPI pins*/

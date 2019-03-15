@@ -24,9 +24,7 @@ const uint8_t block_brick[8] = {0b11111111,
 const uint8_t block_empty[8] = {0};
 
 const struct projection g_proj_pix2grid =
-   {.fx = PROJ_FUNC_DIV,
-    .fy = PROJ_FUNC_DIV,
-    .sx = GRID_BLOCK_WIDTH,
+   {.sx = GRID_BLOCK_WIDTH,
     .sy = GRID_BLOCK_HEIGHT,
    };
 
