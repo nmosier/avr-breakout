@@ -107,7 +107,8 @@ uint8_t bounds_should_union(const struct bounds *bnds1,
    bounds_union(bnds1, bnds2, un);
    dA = (int) bounds_area(un) - (int) bounds_area(bnds1) - (int) bounds_area(bnds2);
 
-   return (dA < DISPLAY_SELECT_IOBYTES) ? 1 : 0;
+   /* divide by 8 b/c bounds not yet downsized for display */
+   return (dA / 8 < DISPLAY_SELECT_IOBYTES) ? 1 : 0;
 }
 
 
@@ -142,4 +143,62 @@ void blist_delete(struct bounds_list **blist) {
       it = it->next;
       free(del);
    }
+}
+
+
+//////////// PROJECTIONS ////////////
+
+// TODO: break `project' up into `project_down' and `project_up'
+
+/* project: project bounds from one coordinate space to another
+ */
+uint8_t project(const struct bounds *src, struct bounds *dst,
+                const struct projection *proj, enum proj_mode mode) {
+
+   /* determine division mode */
+   uint8_t (*div_crds)(uint8_t, uint8_t) = (mode == PROJ_MODE_SHARP) ? udivup8 : udivdwn8;
+   uint8_t (*div_ext)(uint8_t, uint8_t) = (mode == PROJ_MODE_SHARP)  ? udivdwn8 : udivup8;
+   
+   /* x coords/extent */
+   if (proj->fx == PROJ_FUNC_MUL) {
+      /* multiply */
+      dst->crds.x = src->crds.x * proj->sx;
+      dst->ext.w = src->ext.w * proj->sx;
+   } else {
+      /* divide */
+      dst->crds.x = div_crds(src->crds.x, proj->sx);
+      dst->ext.w = div_ext(src->ext.w - (-src->crds.x % proj->sx), proj->sx);
+   }
+
+   /* y coords/extent */
+   if (proj->fy == PROJ_FUNC_MUL) {
+      /* multiply */
+      dst->crds.y = src->crds.y * proj->sy;
+      dst->ext.h = src->ext.h * proj->sy;
+   } else {
+      /* divide */
+      dst->crds.y = div_crds(src->crds.y, proj->sy);
+      dst->ext.h = div_ext(src->ext.h - (-src->crds.y % proj->sy), proj->sy);
+   }
+
+   /* check if projection is valid */
+   return dst->ext.w && dst->ext.h;
+}
+
+
+
+uint8_t udivup8(uint8_t dividend, uint8_t divisor) {
+   return (dividend + divisor - 1) / divisor;
+}
+
+uint8_t udivdwn8(uint8_t dividend, uint8_t divisor) {
+   return dividend / divisor;
+}
+
+uint8_t urndup8(uint8_t n, uint8_t fact) {
+   return udivup8(n, fact) * fact;
+}
+
+uint8_t urnddwn8(uint8_t n, uint8_t fact) {
+   return udivdwn8(n, fact) * fact;
 }

@@ -3,6 +3,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include "SSD1306.h"
 #include "objects.h"
 #include "canvas.h"
@@ -52,3 +53,14 @@ void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
       }
    }
 }
+
+// TODO: create general function called 'object_move' that does the generic version of this.
+#if 0
+void paddle_move(int8_t dx, struct bounds *update) {
+   struct bounds paddle_pos_old;
+
+   memcpy(&paddle_pos_old, &paddle_pos, sizeof );
+   paddle_pos += dx;
+   bounds_union(&paddle_pos_old, &paddle_pos, update);
+}
+#endif

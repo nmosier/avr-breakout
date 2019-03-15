@@ -10,6 +10,7 @@
 #include "paddle.h"
 #include "objects.h"
 #include "physics.h"
+#include "button.h"
 
 void loop();
 
@@ -45,19 +46,20 @@ int main(void) {
 }
 
 void loop() {
-   /* update ball */
    struct bounds update;
+   struct bounds update_scrn;
+   
    phys_ball_freebounce(&ball_pos, &ball_vel, &update);
    
    /* convert pixel update bounds to screen coordinates */
-
+   //project(&update, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
    update.ext.h = (update.ext.h + (update.crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
    update.crds.y /= 8;
    
    display_selectbnds(&update);
    
    /* draw update buffer */
-   uint8_t bufsize = update.ext.w * update.ext.h;
+   uint8_t bufsize = bounds_area(&update);
    uint8_t buf[bufsize];
 
    memset(buf, 0, bufsize);
@@ -65,4 +67,5 @@ void loop() {
    
    SSD1306_DATA;
    spi_write(buf, bufsize);
+
 }

@@ -9,85 +9,62 @@
 #include "util.h"
 #include "physics.h"
 
-struct bounds *phys_move_ball() {
-   /* update ball position given velocity */
-   
-   /* update position */
+void phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
+   switch (touch) {
+   case BOUNDS_TOUCH_TOP:
+   case BOUNDS_TOUCH_BOTTOM:
+      vel->vy *= -1;
+      break;
 
-   return NULL;
+   case BOUNDS_TOUCH_LEFT:
+   case BOUNDS_TOUCH_RIGHT:
+      vel->vx *= -1;
+      break;
+
+   case BOUNDS_TOUCH_CORNER_TOPLEFT: // invert xy-velocities
+   case BOUNDS_TOUCH_CORNER_TOPRIGHT:
+   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
+   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
+      vel->vx *= -1;
+      vel->vy *= -1;
+      break;
+      
+   default:
+      break;
+   }
 }
 
 /* phys_ball_freebounce: Bounce ball around on screen unobstructed. */
 void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update) {
+
    /* update velocity if necessary */
-   switch (bounds_touch_inner(ball_pos, &screen_bnds)) {
-   case BOUNDS_TOUCH_TOP:
-   case BOUNDS_TOUCH_BOTTOM:
-      ball_vel->vy *= -1;
-      break;
-
-   case BOUNDS_TOUCH_LEFT:
-   case BOUNDS_TOUCH_RIGHT:
-      ball_vel->vx *= -1;
-      break;
-
-   case BOUNDS_TOUCH_CORNER_TOPLEFT: // invert xy-velocities
-   case BOUNDS_TOUCH_CORNER_TOPRIGHT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-      ball_vel->vx *= -1;
-      ball_vel->vy *= -1;
-      break;
-      
-   default:
-      break;
-   }
-
-
-   switch(bounds_touch_outer(ball_pos, &paddle_pos)) {
-   case BOUNDS_TOUCH_TOP: // invert y-velocity
-   case BOUNDS_TOUCH_BOTTOM:
-      ball_vel->vy *= -1;
-      break;
-      
-   case BOUNDS_TOUCH_RIGHT:
-   case BOUNDS_TOUCH_LEFT: // invert x-velocity (problem?)
-      ball_vel->vx *= -1;
-      break;
-      
-   case BOUNDS_TOUCH_CORNER_TOPLEFT: // invert xy-velocities
-   case BOUNDS_TOUCH_CORNER_TOPRIGHT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-      ball_vel->vx *= -1;
-      ball_vel->vy *= -1;
-      break;
-
-   case BOUNDS_TOUCH_NONE:
-   case BOUNDS_OVERLAP:
-   default:
-      break;
-   }
+   phys_adjust_velocity(bounds_touch_inner(ball_pos, &screen_bnds), ball_vel);
+   phys_adjust_velocity(bounds_touch_outer(ball_pos, &paddle_pos), ball_vel);
 
    /* grid deflection */
    phys_grid_deflect(ball_pos, ball_vel);
    
    /* initialize update bounds */
    struct bounds ball_pos_old;
-   memcpy(&ball_pos_old, ball_pos, sizeof(*update));
+   memcpy(&ball_pos_old, ball_pos, sizeof(*ball_pos));
+
+   /* insert old position into blist */
+   //blist_insert(ball_pos, update);
    
    /* update position given velocity */
    ball_pos->crds.x += ball_vel->vx;
    ball_pos->crds.y += ball_vel->vy;
    
-   /* update update bounds */
+   /* insert new position into blist */
+   //blist_insert(ball_pos, update);
    bounds_union(&ball_pos_old, ball_pos, update);
 }
 
 
-
+// TODO: revise this monstrosity.
+#if 1
 void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    uint8_t cmp_x[2], cmp_y[2];
    
@@ -108,7 +85,7 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    
    uint8_t flip_vx = 0; // whether to invert x velocity
    uint8_t flip_vy = 0; // whether to invert y velocity
-   
+
    if (cmp_x[0]) {
       for (uint8_t y = gbnds.crds.y; y < gbnds.crds.y + gbnds.ext.h; ++y) {
          if (grid_testblock(y, gbnds.crds.x - 1)) {
@@ -178,3 +155,9 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
       vel->vy *= -1;
    }
 }
+#else
+void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
+   struct bounds block_bnds;
+   
+}
+#endif

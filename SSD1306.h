@@ -72,6 +72,8 @@
 #include "spi.h"
 #include "util.h"
 
+extern const struct projection g_proj_pix2scrn;
+
 void display_config();
 void display_init();
 void display_clear(uint8_t pix);
@@ -79,13 +81,8 @@ void display_clear(uint8_t pix);
 /* note: height & width must be nonzero
  * note: slave should be selected */
 #define DISPLAY_SELECT_IOBYTES 6
-inline void display_select(uint8_t page, uint8_t col, uint8_t height,
-                           uint8_t width) {
-   SSD1306_COMMAND;
-   const uint8_t cmds[] = {SSD1306_PAGEADDR, page, page + height - 1,
-                           SSD1306_COLUMNADDR, col, col + width - 1};
-   spi_write(cmds, LEN(cmds));
-}
+void display_select(uint8_t page, uint8_t col, uint8_t height,
+                    uint8_t width);
 
 inline void display_selectbnds(const struct bounds *bnds) {
    display_select(bnds->crds.y, bnds->crds.x, bnds->ext.h, bnds->ext.w);

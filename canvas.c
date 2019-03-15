@@ -10,6 +10,7 @@
 #include "SSD1306.h"
 #include "paddle.h"
 #include "ball.h"
+#include "util.h"
 
 const uint8_t block_brick[8] = {0b11111111,
                                 0b01000100,
@@ -22,8 +23,12 @@ const uint8_t block_brick[8] = {0b11111111,
 
 const uint8_t block_empty[8] = {0};
 
-    
-     
+const struct projection g_proj_pix2grid =
+   {.fx = PROJ_FUNC_DIV,
+    .fy = PROJ_FUNC_DIV,
+    .sx = GRID_BLOCK_WIDTH,
+    .sy = GRID_BLOCK_HEIGHT,
+   };
 
 inline const uint8_t *grid_getsprite(uint8_t row, uint8_t col) {
    return grid_testblock(row, col) ? block_brick : block_empty;
@@ -34,38 +39,17 @@ void grid_displayblock(uint8_t row, uint8_t col) {
 
    sprite = grid_getsprite(row, col);
    
-   SLAVE_SELECT;
    display_select(row, col * 8, 1, 8); // just select one block
 
    /* display block sprite */
    SSD1306_DATA;
    spi_write(sprite, 8);
-
-   SLAVE_DESELECT;
-}
-
-void grid_display_full() {
-   const uint8_t *sprite;
-   
-   SLAVE_SELECT;
-   display_select(0, 0, 8 - 1, DISPLAY_WIDTH - 1);
-   
-   SSD1306_DATA;
-   for (uint8_t row = 0; row < GRID_HEIGHT; ++row) {
-      for (uint8_t col = 0; col < GRID_WIDTH; ++col) {
-         sprite = grid_getsprite(row, col);
-         spi_write(sprite, 8);
-      }
-   }
-   
-   SLAVE_DESELECT;
 }
 
 /* grid_display_layer: OR underlying grid to buffer.
  * TODO: handle buffers that aren't aligned with grid (in x-axis).
  */
 void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
-   #if 1
    uint8_t col_begin, col_end, row_begin, row_end;
 
    col_begin = bnds->crds.x;
@@ -83,22 +67,6 @@ void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
          buf += cnt;
       }
    }
-
-   #else
-   uint8_t rows, cols, row, col;
-
-   row = bnds->crds.y; // y is in pages, not pixels
-   col = bnds->crds.x / 8;
-   rows = bnds->ext.h; // h is in pages, not pixels
-   cols = bnds->ext.w / 8;
-   for (uint8_t rowi = row; rowi < row + rows; ++rowi) {
-      for (uint8_t coli = col; coli < col + cols; ++coli) {
-         /* copy sprite into buffer */
-         memcpy(buf, grid_getsprite(rowi, coli), 8);
-         buf += 8;
-      }
-   }
-   #endif
 }
 
 
@@ -119,7 +87,6 @@ struct graphics_layer graphics_layers[] =
  *       Necessary because we can't use a dedicated screen buffer.
  * TODO: inline.
  */
-
 void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds) {
    for (struct graphics_layer *layer = graphics_layers;
         layer < END(graphics_layers); ++layer) {
@@ -167,7 +134,6 @@ void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,
    }
 }
 
-/* TODO: inline this. */
 void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
                            uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
    for (uint8_t dx = 0; dx < w; ++dx) {
@@ -217,3 +183,22 @@ void canvas_display_full() {
    }
 }
 
+/* NOTE: modifies blist. */
+void canvas_display_updates(struct bounds_list **blist) {
+   for (struct bounds_list *it = *blist; it; it = it->next) {
+      bounds_downsize(&it->bnds);
+
+      uint8_t bufsize = bounds_area(&it->bnds);
+      uint8_t buf[bufsize];
+      memset(buf, 0, bufsize);
+      
+      /* 1. select bounds
+       * 2. get buffer for bounds
+       * 3. write buffer to screen 
+       */
+      display_selectbnds(&it->bnds);
+      canvas_getbuffer(buf, &it->bnds);
+      SSD1306_DATA;
+      spi_write(buf, bufsize);
+   }
+}

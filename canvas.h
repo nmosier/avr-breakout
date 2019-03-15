@@ -15,6 +15,8 @@ struct graphics_layer {
    // future: perhaps add bounds? 
 };
 
+/* externs */
+extern const struct projection g_proj_pix2grid;
 
 inline void grid_setblock(uint8_t row, uint8_t col) {
    grid[row / 8][col] |= 1 << (row % 8);
@@ -40,6 +42,6 @@ void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
 void bounds_create(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
                    struct bounds *bnds);
 void canvas_display_full();
-
+void canvas_display_updates(struct bounds_list **blist);
 
 #endif

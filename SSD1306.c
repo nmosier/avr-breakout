@@ -2,10 +2,16 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-// #include "../AVR-Programming/AVR-Programming-Library/pinDefines.h"
 #include "SSD1306.h"
 #include "spi.h"
+#include "util.h"
 
+const struct projection g_proj_pix2scrn =
+   {.fx = PROJ_FUNC_DIV,
+    .fy = PROJ_FUNC_MUL,
+    .sx = 1,
+    .sy = 8
+   };
 
 void display_config() {
    /* config SPI pins*/
@@ -95,3 +101,11 @@ void display_clear(uint8_t pix) {
 
    SLAVE_DESELECT;
 }                                  
+
+void display_select(uint8_t page, uint8_t col, uint8_t height,
+                    uint8_t width) {
+   SSD1306_COMMAND;
+   const uint8_t cmds[] = {SSD1306_PAGEADDR, page, page + height - 1,
+                           SSD1306_COLUMNADDR, col, col + width - 1};
+   spi_write(cmds, LEN(cmds));
+}

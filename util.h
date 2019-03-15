@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "SSD1306.h"
 
 struct coords {
    uint8_t x;
@@ -33,6 +34,16 @@ struct bounds_list {
    struct bounds_list *next;
 };
 
+#define PROJ_FUNC_MUL 1
+#define PROJ_FUNC_DIV 0
+enum proj_mode {PROJ_MODE_SHARP, PROJ_MODE_FUZZY};
+struct projection {
+   uint8_t fx: 1; // x function (mul./div.)
+   uint8_t fy: 1; // y function (mul./div.)
+   uint8_t sx; // x scalar
+   uint8_t sy; // y scalar
+};
+
 /* general util macros */
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))
 #define END(arr) (arr + LEN(arr))
@@ -41,22 +52,25 @@ struct bounds_list {
 #define MIN(i1, i2) ((i1) < (i2) ? (i1) : (i2))
 #define MAX(i1, i2) ((i2) < (i2) ? (i2) : (i1))
 
-#define INTTYPE(intsize) uint##intsize##_t
-#define UMIN_TEMPLATE(intsize)                                           \
-   inline uint##intsize##_t umin##intsize(uint##intsize##_t i1,          \
-                                         uint##intsize##_t i2) {        \
+#define UMIN_TEMPLATE(intsize)                                          \
+   inline uint##intsize##_t umin##intsize(uint##intsize##_t i1,         \
+                                          uint##intsize##_t i2) {       \
       return i1 < i2 ? i1 : i2;                                         \
    }
-#define UMAX_TEMPLATE(intsize)                                           \
+#define UMAX_TEMPLATE(intsize)                                          \
    inline uint##intsize##_t umax##intsize(uint##intsize##_t i1,          \
                                          uint##intsize##_t i2) {        \
       return i1 < i2 ? i2 : i1;                                         \
    }
-#define ABSU_TEMPLATE(intsize)                  \
+#define ABSU_TEMPLATE(intsize)                                    \
    inline uint##intsize##_t absu##intsize(int##intsize##_t i) {   \
       return i < 0 ? -i : i;                                      \
    }
 
+uint8_t udivup8(uint8_t dividend, uint8_t divisor);
+uint8_t udivdwn8(uint8_t dividend, uint8_t divisor);
+uint8_t urndup8(uint8_t n, uint8_t fact);
+uint8_t urnddwn8(uint8_t n, uint8_t fact);
 
 UMIN_TEMPLATE(8);
 UMAX_TEMPLATE(8);
@@ -73,6 +87,7 @@ enum {BOUNDS_TOUCH_NONE,
       BOUNDS_TOUCH_CORNER_BOTTOMRIGHT,
       BOUNDS_OVERLAP
 };
+
 uint8_t bounds_touch_outer(const struct bounds *bnds1,
                            const struct bounds *bnds2);
 uint8_t bounds_touch_inner(const struct bounds *bnds_inner,
@@ -83,6 +98,11 @@ inline uint16_t bounds_area(const struct bounds *bnds) {
    return bnds->ext.w * bnds->ext.h;
 }
 
+inline void bounds_downsize(struct bounds *bnds) {
+   bnds->ext.h = (bnds->ext.h + (bnds->crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
+   bnds->crds.y = bnds->crds.y / 8;
+}
+
 ///////////// BOUNDS LIST /////////////
 inline void blist_init(struct bounds_list **blist) {
    *blist = NULL;
@@ -90,6 +110,10 @@ inline void blist_init(struct bounds_list **blist) {
 
 void blist_insert(const struct bounds *bnds, struct bounds_list **blist);
 void blist_delete(struct bounds_list **blist);
+
+/////////// PROJECTIONS ///////////
+uint8_t project(const struct bounds *src, struct bounds *dst,
+             const struct projection *proj, enum proj_mode mode);
 
 #endif
 
