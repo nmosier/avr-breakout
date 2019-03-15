@@ -78,10 +78,11 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
                vel->vy > 0);
    
    struct bounds gbnds;
-   gbnds.crds.x = bnds->crds.x / 8;
-   gbnds.crds.y = bnds->crds.y / 8;
-   gbnds.ext.w = (bnds->crds.x + bnds->ext.w + 7) / 8 - gbnds.crds.x;
-   gbnds.ext.h = (bnds->crds.y + bnds->ext.h + 7) / 8 - gbnds.crds.y;
+   project_down(bnds, &gbnds, &g_proj_pix2grid, PROJ_MODE_FUZZY);
+   //gbnds.crds.x = bnds->crds.x / 8;
+   //gbnds.crds.y = bnds->crds.y / 8;
+   //gbnds.ext.w = (bnds->crds.x + bnds->ext.w + 7) / 8 - gbnds.crds.x;
+   //gbnds.ext.h = (bnds->crds.y + bnds->ext.h + 7) / 8 - gbnds.crds.y;
    
    uint8_t flip_vx = 0; // whether to invert x velocity
    uint8_t flip_vy = 0; // whether to invert y velocity
