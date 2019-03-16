@@ -12,28 +12,25 @@
 uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
    switch (touch) {
    case BOUNDS_TOUCH_TOP:
+      return (vel->vy < 0) ? VEL_FLIP_Y : VEL_FLIP_NONE;
    case BOUNDS_TOUCH_BOTTOM:
-      //vel->vy *= -1;
-      //break;
-      return VEL_FLIP_Y;
+      return (vel->vy > 0) ? VEL_FLIP_Y : VEL_FLIP_NONE;
 
    case BOUNDS_TOUCH_LEFT:
+      return (vel->vx < 0) ? VEL_FLIP_X : VEL_FLIP_NONE;
    case BOUNDS_TOUCH_RIGHT:
-      //vel->vx *= -1;
-      //break;
-      return VEL_FLIP_X;
+      return (vel->vx > 0) ? VEL_FLIP_X : VEL_FLIP_NONE;
 
-   case BOUNDS_TOUCH_CORNER_TOPLEFT: // invert xy-velocities
+   case BOUNDS_TOUCH_CORNER_TOPLEFT:
+      return (vel->vx < 0 && vel->vy < 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
    case BOUNDS_TOUCH_CORNER_TOPRIGHT:
+      return (vel->vx > 0 && vel->vy < 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
    case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
+      return (vel->vx < 0 && vel->vy > 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
    case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-      //vel->vx *= -1;
-      //vel->vy *= -1;
-      //break;
-      return VEL_FLIP_X | VEL_FLIP_Y;
+      return (vel->vx > 0 && vel->vy > 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
       
    default:
-      //break;
       return VEL_FLIP_NONE;
    }
 }
@@ -56,7 +53,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
 
    /* check velocity deflections  */
    flip |= phys_adjust_velocity(bounds_touch_inner(ball_pos, &screen_bnds), ball_vel);
-   flip |= phys_adjust_velocity(bounds_touch_outer(ball_pos, &paddle_pos), ball_vel);
+   flip |= phys_adjust_velocity(bounds_touch_outer(&paddle_pos, ball_pos), ball_vel);
    flip |= phys_grid_deflect(ball_pos, ball_vel, update);
 
    /* apply velocity flip */
