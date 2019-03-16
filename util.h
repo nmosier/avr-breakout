@@ -90,8 +90,10 @@ uint8_t bounds_touch_outer(const struct bounds *bnds1,
                            const struct bounds *bnds2);
 uint8_t bounds_touch_inner(const struct bounds *bnds_inner,
                            const struct bounds *bnds_outer);
-void bounds_union(const struct bounds *bnds1, const struct bounds *bnds2,
+void bounds_union_pair(const struct bounds *bnds1, const struct bounds *bnds2,
                   struct bounds *un);
+void bounds_union(struct bounds *un, ...);
+
 inline uint16_t bounds_area(const struct bounds *bnds) {
    return bnds->ext.w * bnds->ext.h;
 }
@@ -100,6 +102,10 @@ inline void bounds_downsize(struct bounds *bnds) {
    bnds->ext.h = (bnds->ext.h + (bnds->crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
    bnds->crds.y = bnds->crds.y / 8;
 }
+
+inline uint8_t bounds_null(const struct bounds *un) {
+   return !(un->crds.x || un->crds.y);
+};
 
 ///////////// BOUNDS LIST /////////////
 inline void blist_init(struct bounds_list **blist) {

@@ -50,16 +50,16 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    struct bounds ball_pos_old;
    memcpy(&ball_pos_old, ball_pos, sizeof(*ball_pos));
 
-   /* insert old position into blist */
-   //blist_insert(ball_pos, update);
-   
    /* update position given velocity */
    ball_pos->crds.x += ball_vel->vx;
    ball_pos->crds.y += ball_vel->vy;
    
    /* insert new position into blist */
-   //blist_insert(ball_pos, update);
-   bounds_union(&ball_pos_old, ball_pos, update);
+#if 0
+   bounds_union_pair(&ball_pos_old, ball_pos, update);
+#else
+   bounds_union(update, &ball_pos_old, ball_pos, NULL);
+#endif
 }
 
 
@@ -172,7 +172,7 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    newbnds.crds.x = bnds->crds.x + vel->vx;
    newbnds.crds.y = bnds->crds.y + vel->vy;
    newbnds.ext = bnds->ext;
-   bounds_union(bnds, &newbnds, &path);
+   bounds_union_pair(bnds, &newbnds, &path);
 
    /* project swept out path to gridspace */
    project_down(&path, &grid_path, &g_proj_pix2grid, PROJ_MODE_FUZZY);

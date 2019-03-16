@@ -61,6 +61,6 @@ void paddle_move(int8_t dx, struct bounds *update) {
 
    memcpy(&paddle_pos_old, &paddle_pos, sizeof );
    paddle_pos += dx;
-   bounds_union(&paddle_pos_old, &paddle_pos, update);
+   bounds_union_pair(&paddle_pos_old, &paddle_pos, update);
 }
 #endif

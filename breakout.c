@@ -48,6 +48,9 @@ int main(void) {
 void loop() {
    struct bounds update;
    struct bounds update_scrn;
+
+   /* init */
+   memset(&update, 0, sizeof(update));
    
    phys_ball_freebounce(&ball_pos, &ball_vel, &update);
    
