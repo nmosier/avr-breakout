@@ -148,6 +148,8 @@ void blist_delete(struct bounds_list **blist) {
 
 //////////// PROJECTIONS ////////////
 
+// TODO: add function for projecting coordinates -- then use this in project_* functions.
+
 uint8_t project_down(const struct bounds *src, struct bounds *dst,
                      const struct projection *proj, enum proj_mode mode) {
    /* determine division mode */
@@ -177,6 +179,23 @@ uint8_t project_up(const struct bounds *src, struct bounds *dst,
    return dst->ext.w && dst->ext.h;
 }
 
+uint8_t project_round(const struct bounds *src, struct bounds *dst,
+                      const struct projection *proj, enum proj_mode mode) {
+
+   /* determine rounding mode */
+   uint8_t (*rnd_crds)(uint8_t, uint8_t) = (mode == PROJ_MODE_SHARP) ? urndup8 : urnddwn8;
+   uint8_t (*rnd_ext)(uint8_t, uint8_t)  = (mode == PROJ_MODE_SHARP) ? urnddwn8 : urndup8;
+
+   /* round coords */
+   dst->crds.x = rnd_crds(src->crds.x, proj->sx);
+   dst->crds.y = rnd_crds(src->crds.y, proj->sy);
+
+   /* round ext */
+   dst->ext.w = rnd_ext(src->ext.w - (-src->crds.x % proj->sx), proj->sx);
+   dst->ext.h = rnd_ext(src->ext.h - (-src->crds.y % proj->sy), proj->sy);
+
+   return dst->ext.w && dst->ext.h;
+}
 
 uint8_t udivup8(uint8_t dividend, uint8_t divisor) {
    return (dividend + divisor - 1) / divisor;

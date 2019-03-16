@@ -45,6 +45,6 @@ struct bounds paddle_pos = {.crds = {.x = 10,
 /* note: currently only supports one ball
  * note: y-coord is pixels, NOT pages
  */
-struct bounds ball_pos = {.crds = {.x = 61, .y = 29},
+struct bounds ball_pos = {.crds = {.x = 60, .y = 28},
                           .ext = {.w = BALL_WIDTH, .h = BALL_HEIGHT}};
 struct velocity ball_vel = {.vx = 1, .vy = 1}; // in pixels/sec

@@ -114,6 +114,8 @@ uint8_t project_up(const struct bounds *src, struct bounds *dst,
                    const struct projection *proj, enum proj_mode mode);
 uint8_t project_down(const struct bounds *src, struct bounds *dst,
                      const struct projection *proj, enum proj_mode mode);
+uint8_t project_round(const struct bounds *src, struct bounds *dst,
+                      const struct projection *proj, enum proj_mode mode);
 
 
 #endif

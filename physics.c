@@ -64,7 +64,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
 
 
 // TODO: revise this monstrosity.
-#if 1
+#if 0
 void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    uint8_t cmp_x[2], cmp_y[2];
    
@@ -79,10 +79,6 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    
    struct bounds gbnds;
    project_down(bnds, &gbnds, &g_proj_pix2grid, PROJ_MODE_FUZZY);
-   //gbnds.crds.x = bnds->crds.x / 8;
-   //gbnds.crds.y = bnds->crds.y / 8;
-   //gbnds.ext.w = (bnds->crds.x + bnds->ext.w + 7) / 8 - gbnds.crds.x;
-   //gbnds.ext.h = (bnds->crds.y + bnds->ext.h + 7) / 8 - gbnds.crds.y;
    
    uint8_t flip_vx = 0; // whether to invert x velocity
    uint8_t flip_vy = 0; // whether to invert y velocity
@@ -159,6 +155,64 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
 #else
 void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    struct bounds block_bnds;
-   
+
+   /* get bounding box for bnds in grid */
+   project_round(bnds, &block_bnds, &g_proj_pix2grid, PROJ_MODE_FUZZY);
+
+   /* check contact of bnds and bounding box */
+   uint8_t touch = bounds_touch_inner(bnds, &block_bnds);
+
+   /* if no contact, then there will be no collision with grid */
+   if (touch == BOUNDS_TOUCH_NONE) {
+      return;
+   }
+
+   /* otherwise, advance ball along current trajectory and find the union grid bounds */
+   struct bounds newbnds, path, grid_path, grid_ball;
+   newbnds.crds.x = bnds->crds.x + vel->vx;
+   newbnds.crds.y = bnds->crds.y + vel->vy;
+   newbnds.ext = bnds->ext;
+   bounds_union(bnds, &newbnds, &path);
+
+   /* project swept out path to gridspace */
+   project_down(&path, &grid_path, &g_proj_pix2grid, PROJ_MODE_FUZZY);
+
+   /* convert ball bounds to grid bounds */
+   project_down(&block_bnds, &grid_ball, &g_proj_pix2grid, PROJ_MODE_FUZZY);
+
+   /* search for nonempty blocks in path */
+   uint8_t flip_x, flip_y, flip_corner;
+   uint8_t row_end = grid_path.crds.y + grid_path.ext.h;
+   uint8_t col_end = grid_path.crds.x + grid_path.ext.w;
+
+   flip_x = flip_y = flip_corner = 0;
+   for (uint8_t row = grid_path.crds.y; row < row_end; ++row) {
+      for (uint8_t col = grid_path.crds.x; col < col_end; ++col) {
+         if (grid_testblock(row, col)) {
+            /* found collision */
+            uint8_t diff_col = (col != grid_ball.crds.x);
+            uint8_t diff_row = (row != grid_ball.crds.y);
+            
+            if (diff_col && diff_row) {
+               /* corner case (pun [not] intended) */
+               flip_corner = 1;
+            } else if (diff_col) {
+               /* flip x component of velocity */
+               flip_x = 1;
+            } else { // if (diff_row) {
+               /* flip y component of velocity */
+               flip_y = 1;
+            }
+         }
+      }
+   }
+
+   uint8_t should_flip_corner = !(flip_x || flip_y) && flip_corner;
+   if (flip_x || should_flip_corner) {
+      vel->vx = -vel->vx;
+   }
+   if (flip_y || should_flip_corner) {
+      vel->vy = -vel->vy;
+   }
 }
 #endif
