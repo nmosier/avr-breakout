@@ -18,6 +18,9 @@ struct velocity {
    int8_t vx;
    int8_t vy;
 };
+#define VEL_FLIP_NONE 0
+#define VEL_FLIP_X    1
+#define VEL_FLIP_Y    2
 
 struct extent {
    uint8_t w;

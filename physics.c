@@ -9,28 +9,41 @@
 #include "util.h"
 #include "physics.h"
 
-void phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
+uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
    switch (touch) {
    case BOUNDS_TOUCH_TOP:
    case BOUNDS_TOUCH_BOTTOM:
-      vel->vy *= -1;
-      break;
+      //vel->vy *= -1;
+      //break;
+      return VEL_FLIP_Y;
 
    case BOUNDS_TOUCH_LEFT:
    case BOUNDS_TOUCH_RIGHT:
-      vel->vx *= -1;
-      break;
+      //vel->vx *= -1;
+      //break;
+      return VEL_FLIP_X;
 
    case BOUNDS_TOUCH_CORNER_TOPLEFT: // invert xy-velocities
    case BOUNDS_TOUCH_CORNER_TOPRIGHT:
    case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
    case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-      vel->vx *= -1;
-      vel->vy *= -1;
-      break;
+      //vel->vx *= -1;
+      //vel->vy *= -1;
+      //break;
+      return VEL_FLIP_X | VEL_FLIP_Y;
       
    default:
-      break;
+      //break;
+      return VEL_FLIP_NONE;
+   }
+}
+
+void phys_flip_velocity(uint8_t flags, struct velocity *vel) {
+   if ((flags & VEL_FLIP_X)) {
+      vel->vx = -vel->vx;
+   }
+   if ((flags & VEL_FLIP_Y)) {
+      vel->vy = -vel->vy;
    }
 }
 
@@ -39,12 +52,15 @@ void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update) {
 
-   /* update velocity if necessary */
-   phys_adjust_velocity(bounds_touch_inner(ball_pos, &screen_bnds), ball_vel);
-   phys_adjust_velocity(bounds_touch_outer(ball_pos, &paddle_pos), ball_vel);
+   uint8_t flip = VEL_FLIP_NONE; // velocity flip flags
 
-   /* grid deflection */
-   phys_grid_deflect(ball_pos, ball_vel, update);
+   /* check velocity deflections  */
+   flip |= phys_adjust_velocity(bounds_touch_inner(ball_pos, &screen_bnds), ball_vel);
+   flip |= phys_adjust_velocity(bounds_touch_outer(ball_pos, &paddle_pos), ball_vel);
+   flip |= phys_grid_deflect(ball_pos, ball_vel, update);
+
+   /* apply velocity flip */
+   phys_flip_velocity(flip, ball_vel);
    
    /* initialize update bounds */
    struct bounds ball_pos_old;
@@ -59,8 +75,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
 }
 
 
-#define PHYS_GRID_DEFLECT_MAXBLOCKS 2
-void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
+uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
                        struct bounds *update) {
    struct bounds block_bnds;
 
@@ -72,7 +87,7 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
 
    /* if no contact, then there will be no collision with grid */
    if (touch == BOUNDS_TOUCH_NONE) {
-      return;
+      return VEL_FLIP_NONE;
    }
 
    /* otherwise, advance ball along current trajectory and find the union grid bounds */
@@ -89,11 +104,11 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
    project_down(&block_bnds, &grid_ball, &g_proj_pix2grid, PROJ_MODE_FUZZY);
 
    /* search for nonempty blocks in path */
-   uint8_t flip_x, flip_y, flip_corner;
+   uint8_t flip, flip_corner;
    uint8_t row_end = grid_path.crds.y + grid_path.ext.h;
    uint8_t col_end = grid_path.crds.x + grid_path.ext.w;
 
-   flip_x = flip_y = flip_corner = 0;
+   flip = flip_corner = VEL_FLIP_NONE;
    for (uint8_t row = grid_path.crds.y; row < row_end; ++row) {
       for (uint8_t col = grid_path.crds.x; col < col_end; ++col) {
          if (grid_testblock(row, col)) {
@@ -105,18 +120,13 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
             
             if (diff_col && diff_row) {
                /* corner case (pun [not] intended) */
-               flip_corner = 1;
-            } else if (diff_col) {
-               /* flip x component of velocity */
-               if (!flip_x) {
-                  flip_x = 1;
-                  grid_clearblock(row, col);
-                  bounds_union(update, &update_block, NULL);
-               }
-            } else { // if (diff_row) {
-               /* flip y component of velocity */
-               if (!flip_y) {
-                  flip_y = 1;
+               flip_corner = VEL_FLIP_X | VEL_FLIP_Y;
+            } else {
+               /* side case */
+               uint8_t flip_mask = diff_col ? VEL_FLIP_X : VEL_FLIP_Y;
+               
+               if ((flip_mask & flip) == VEL_FLIP_NONE) {
+                  flip |= flip_mask;
                   grid_clearblock(row, col);
                   bounds_union(update, &update_block, NULL);
                }
@@ -125,20 +135,16 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
       }
    }
 
-   uint8_t should_flip_corner = !(flip_x || flip_y) && flip_corner;
-   if (flip_x || should_flip_corner) {
+#if 0
+   uint8_t should_flip_corner = (flip == VEL_FLIP_NONE) && flip_corner;
+   if ((flip & VEL_FLIP_X) || should_flip_corner) {
       vel->vx = -vel->vx;
    }
-   if (flip_y || should_flip_corner) {
+   if ((flip & VEL_FLIP_Y) || should_flip_corner) {
       vel->vy = -vel->vy;
    }
-
-   /* convert grid path to display space 
-    * TODO: fix this to use project_* function. */
-   //   grid_path.crds.x *= 8;
-   //grid_path.ext.w *= 8;
+#endif
    
-   /* update surrounding blocks */
-   //bounds_union(update, &grid_path, NULL);
+   return flip;
 }
 
