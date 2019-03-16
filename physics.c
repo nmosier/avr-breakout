@@ -44,7 +44,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    phys_adjust_velocity(bounds_touch_outer(ball_pos, &paddle_pos), ball_vel);
 
    /* grid deflection */
-   phys_grid_deflect(ball_pos, ball_vel);
+   phys_grid_deflect(ball_pos, ball_vel, update);
    
    /* initialize update bounds */
    struct bounds ball_pos_old;
@@ -55,105 +55,13 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    ball_pos->crds.y += ball_vel->vy;
    
    /* insert new position into blist */
-#if 0
-   bounds_union_pair(&ball_pos_old, ball_pos, update);
-#else
    bounds_union(update, &ball_pos_old, ball_pos, NULL);
-#endif
 }
 
 
-// TODO: revise this monstrosity.
-#if 0
-void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
-   uint8_t cmp_x[2], cmp_y[2];
-   
-   cmp_x[0] = (bnds->crds.x % 8 == 0 && bnds->crds.x > 0 && vel->vx < 0);
-   cmp_x[1] = (((bnds->crds.x + bnds->ext.w) % 8 == 0) &&
-               ((bnds->crds.x + bnds->ext.w) < DISPLAY_WIDTH - 1) &&
-               vel->vx > 0);
-   cmp_y[0] = ((bnds->crds.y % 8 == 0) && (bnds->crds.y > 0) && vel->vy < 0);
-   cmp_y[1] = (((bnds->crds.y + bnds->ext.h) % 8 == 0) &&
-               (bnds->crds.y + bnds->ext.h < DISPLAY_HEIGHT - 1) &&
-               vel->vy > 0);
-   
-   struct bounds gbnds;
-   project_down(bnds, &gbnds, &g_proj_pix2grid, PROJ_MODE_FUZZY);
-   
-   uint8_t flip_vx = 0; // whether to invert x velocity
-   uint8_t flip_vy = 0; // whether to invert y velocity
-
-   if (cmp_x[0]) {
-      for (uint8_t y = gbnds.crds.y; y < gbnds.crds.y + gbnds.ext.h; ++y) {
-         if (grid_testblock(y, gbnds.crds.x - 1)) {
-            flip_vx = 1;
-            grid_clearblock(y, gbnds.crds.x - 1);
-            grid_displayblock(y, gbnds.crds.x - 1);
-         }
-      }
-   }
-   if (cmp_x[1]) {
-      for (uint8_t y = gbnds.crds.y; y < gbnds.crds.y + gbnds.ext.h; ++y) {
-         if (grid_testblock(y, gbnds.crds.x + gbnds.ext.w)) {
-            flip_vx = 1;
-            grid_clearblock(y, gbnds.crds.x + gbnds.ext.w);
-            grid_displayblock(y, gbnds.crds.x + gbnds.ext.w);
-         }
-      }
-   }
-   if (cmp_y[0]) {
-      for (uint8_t x = gbnds.crds.x; x < gbnds.crds.x + gbnds.ext.h; ++x) {
-         if (grid_testblock(gbnds.crds.y - 1, x)) {
-            flip_vy = 1;
-            grid_clearblock(gbnds.crds.y -1 , gbnds.crds.x - 1);
-            grid_displayblock(gbnds.crds.y -1 , gbnds.crds.x - 1);
-         }
-      }
-   }
-   if (cmp_y[1]) {
-      for (uint8_t x = gbnds.crds.x; x < gbnds.crds.x + gbnds.ext.h; ++x) {
-         if (grid_testblock(gbnds.crds.y + gbnds.ext.h, x)) {
-            flip_vy = 1;
-            grid_clearblock(gbnds.crds.y + gbnds.ext.h, x);
-            grid_displayblock(gbnds.crds.y + gbnds.ext.h, x);
-         }
-      }
-   }
-
-   if (flip_vx == 0 && flip_vy == 0) {
-      /* check corners */
-      uint8_t grid_x, grid_y;
-
-      grid_x = gbnds.crds.x - 1;
-      grid_y = gbnds.crds.y - 1;
-      if (cmp_x[1]) {
-         grid_x = gbnds.crds.x + gbnds.ext.w;
-      }
-      if (cmp_y[1]) {
-         grid_y = gbnds.crds.y + gbnds.ext.h;
-      }
-
-      for (uint8_t i = 0; i < 2; ++i) {
-         for (uint8_t j = 0; j < 2; ++j) {
-            if (cmp_x[i] && cmp_y[j] && grid_testblock(grid_y, grid_x)) {
-               flip_vx = 1;
-               flip_vy = 1;
-               grid_clearblock(grid_y, grid_x);
-               grid_displayblock(grid_y, grid_x);
-            }
-         }
-      }
-   }
-
-   if (flip_vx) {
-      vel->vx *= -1;
-   }
-   if (flip_vy) {
-      vel->vy *= -1;
-   }
-}
-#else
-void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
+#define PHYS_GRID_DEFLECT_MAXBLOCKS 2
+void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
+                       struct bounds *update) {
    struct bounds block_bnds;
 
    /* get bounding box for bnds in grid */
@@ -192,16 +100,26 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
             /* found collision */
             uint8_t diff_col = (col != grid_ball.crds.x);
             uint8_t diff_row = (row != grid_ball.crds.y);
+            struct bounds update_block = {.crds = {.x = col * 8, .y = row},
+                                          .ext = {.w = 8, .h = 1}};
             
             if (diff_col && diff_row) {
                /* corner case (pun [not] intended) */
                flip_corner = 1;
             } else if (diff_col) {
                /* flip x component of velocity */
-               flip_x = 1;
+               if (!flip_x) {
+                  flip_x = 1;
+                  grid_clearblock(row, col);
+                  bounds_union(update, &update_block, NULL);
+               }
             } else { // if (diff_row) {
                /* flip y component of velocity */
-               flip_y = 1;
+               if (!flip_y) {
+                  flip_y = 1;
+                  grid_clearblock(row, col);
+                  bounds_union(update, &update_block, NULL);
+               }
             }
          }
       }
@@ -214,5 +132,13 @@ void phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    if (flip_y || should_flip_corner) {
       vel->vy = -vel->vy;
    }
+
+   /* convert grid path to display space 
+    * TODO: fix this to use project_* function. */
+   //   grid_path.crds.x *= 8;
+   //grid_path.ext.w *= 8;
+   
+   /* update surrounding blocks */
+   //bounds_union(update, &grid_path, NULL);
 }
-#endif
+

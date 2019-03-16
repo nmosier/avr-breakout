@@ -138,12 +138,8 @@ uint8_t bounds_should_union(const struct bounds *bnds1,
                             struct bounds *un) {
    int dA;
 
-#if 0
-   bounds_union_pair(bnds1, bnds2, un);
-#else
    memset(un, 0, sizeof(*un));
    bounds_union(un, bnds1, bnds2);
-#endif
    
    dA = (int) bounds_area(un) - (int) bounds_area(bnds1) - (int) bounds_area(bnds2);
 
