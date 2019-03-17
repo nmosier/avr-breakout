@@ -13,7 +13,7 @@
 #include "button.h"
 #include "paddle.h"
 
-static void loop(uint8_t should_display);
+static void loop(uint8_t should_display, struct bounds *update_arr);
 
 static void display_update(struct bounds *update_pix);
 
@@ -32,10 +32,10 @@ int main(void) {
    SLAVE_SELECT;
    canvas_display_full();
 
-   uint8_t update_counter = 0;
-
+   struct bounds update_arr[2];
+   memset(update_arr, 0, sizeof(update_arr));
    for (uint8_t update_counter = 0; ; ++update_counter) {
-      loop((update_counter % UPDATE_PERIOD) == 0);
+      loop((update_counter % UPDATE_PERIOD) == 0, update_arr);
    }
    
    SLAVE_DESELECT;
@@ -45,7 +45,7 @@ int main(void) {
 
 // TODO: need to write helper function that sets the bounds, gets the buffer, writes the
 // buffer, etc.
-static void loop(uint8_t should_display) {
+static void loop(uint8_t should_display, struct bounds update_arr[2]) {
    struct bounds update_pix_1, update_pix_2;
 
    if (should_display) {
@@ -53,12 +53,13 @@ static void loop(uint8_t should_display) {
       memset(&update_pix_2, 0, sizeof(update_pix_2));
    }
    
-   phys_ball_freebounce(&ball_pos, &ball_vel, &update_pix_1);
-   paddle_tick(&paddle_pos, &paddle_vel, &update_pix_2);
+   phys_ball_freebounce(&ball_pos, &ball_vel, &update_arr[0]);
+   paddle_tick(&paddle_pos, &paddle_vel, &update_arr[1]);
 
    if (should_display) {
-      display_update(&update_pix_1);
-      display_update(&update_pix_2);
+      display_update(&update_arr[0]);
+      display_update(&update_arr[1]);
+      memset(update_arr, 0, sizeof(*update_arr) * 2);
    }
    
 }
