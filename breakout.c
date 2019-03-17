@@ -11,8 +11,13 @@
 #include "objects.h"
 #include "physics.h"
 #include "button.h"
+#include "paddle.h"
 
-void loop();
+static void loop(uint8_t should_display);
+
+static void display_update(struct bounds *update_pix);
+
+#define UPDATE_PERIOD 4
 
 int main(void) {
    struct bounds bnds = {.crds = {.x = 5, .y = 2},
@@ -27,17 +32,10 @@ int main(void) {
    SLAVE_SELECT;
    canvas_display_full();
 
-   /*
-   SLAVE_SELECT;
-   display_selectbnds(&bnds);
-   canvas_getbuffer(buf, &bnds);
-   SLAVE_SELECT;
-   SSD1306_DATA;
-   spi_write(buf, 12);
-   */
-   
-   while (1) {
-     loop();
+   uint8_t update_counter = 0;
+
+   for (uint8_t update_counter = 0; ; ++update_counter) {
+      loop((update_counter % UPDATE_PERIOD) == 0);
    }
    
    SLAVE_DESELECT;
@@ -45,22 +43,33 @@ int main(void) {
    return 0;
 }
 
-void loop() {
-   struct bounds update;
-   struct bounds update_scrn;
+// TODO: need to write helper function that sets the bounds, gets the buffer, writes the
+// buffer, etc.
+static void loop(uint8_t should_display) {
+   struct bounds update_pix_1, update_pix_2;
 
-   /* init */
-   memset(&update, 0, sizeof(update));
+   if (should_display) {
+      memset(&update_pix_1, 0, sizeof(update_pix_1));
+      memset(&update_pix_2, 0, sizeof(update_pix_2));
+   }
    
-   phys_ball_freebounce(&ball_pos, &ball_vel, &update);
+   phys_ball_freebounce(&ball_pos, &ball_vel, &update_pix_1);
+   paddle_tick(&paddle_pos, &paddle_vel, &update_pix_2);
+
+   if (should_display) {
+      display_update(&update_pix_1);
+      display_update(&update_pix_2);
+   }
    
+}
+
+static void display_update(struct bounds *update_pix) {
    /* convert pixel update bounds to screen coordinates */
-   project_down(&update, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
-   //update.ext.h = (update.ext.h + (update.crds.y & ~SSD1306_PAGE_MASK) + 7) / 8;
-   //update.crds.y /= 8;
-   
+   struct bounds update_scrn;
+   project_down(update_pix, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
+
    display_selectbnds(&update_scrn);
-   
+
    /* draw update buffer */
    uint8_t bufsize = bounds_area(&update_scrn);
    uint8_t buf[bufsize];
@@ -70,5 +79,4 @@ void loop() {
    
    SSD1306_DATA;
    spi_write(buf, bufsize);
-
 }

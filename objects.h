@@ -26,6 +26,7 @@ extern uint8_t grid[GRID_HEIGHT_BYTES][GRID_WIDTH_BYTES];
 #define PADDLE_ROW   (DISPLAY_HEIGHT - PADDLE_HEIGHT)
 
 extern struct bounds paddle_pos;
+extern struct velocity paddle_vel;
 
 //////////// BALL /////////////////
 #define BALL_WIDTH  4

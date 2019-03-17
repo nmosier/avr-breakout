@@ -8,6 +8,8 @@
 #include "objects.h"
 #include "canvas.h"
 #include "paddle.h"
+#include "physics.h"
+#include "util.h"
 
 void paddle_display() {
    uint8_t paddle_page;
@@ -54,13 +56,23 @@ void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
    }
 }
 
-// TODO: create general function called 'object_move' that does the generic version of this.
-#if 0
-void paddle_move(int8_t dx, struct bounds *update) {
-   struct bounds paddle_pos_old;
+void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
+                 struct bounds *update) {
+   uint8_t touch = bounds_touch_inner(&screen_bnds, paddle_bnds);
+   //uint8_t dv = phys_adjust_velocity(touch, paddle_vel);
 
-   memcpy(&paddle_pos_old, &paddle_pos, sizeof );
-   paddle_pos += dx;
-   bounds_union_pair(&paddle_pos_old, &paddle_pos, update);
+   uint8_t dv;
+   switch (touch) {
+   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
+   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
+      dv = VEL_FLIP_X;
+      break;
+      
+   default:
+      dv = VEL_FLIP_NONE;
+      break;
+   }
+
+   phys_flip_velocity(dv, paddle_vel);
+   phys_object_move(paddle_bnds, paddle_vel, update);
 }
-#endif

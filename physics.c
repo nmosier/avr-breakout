@@ -9,6 +9,9 @@
 #include "util.h"
 #include "physics.h"
 
+/* prototypes */
+
+
 uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
    switch (touch) {
    case BOUNDS_TOUCH_TOP:
@@ -45,6 +48,7 @@ void phys_flip_velocity(uint8_t flags, struct velocity *vel) {
 }
 
 /* phys_ball_freebounce: Bounce ball around on screen unobstructed. */
+// TODO: abstract away velocity deflections to abstract interface.
 void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update) {
@@ -64,8 +68,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    memcpy(&ball_pos_old, ball_pos, sizeof(*ball_pos));
 
    /* update position given velocity */
-   ball_pos->crds.x += ball_vel->vx;
-   ball_pos->crds.y += ball_vel->vy;
+   phys_object_move(ball_pos, ball_vel, update);
    
    /* insert new position into blist */
    bounds_union(update, &ball_pos_old, ball_pos, NULL);
@@ -132,16 +135,18 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
       }
    }
 
-#if 0
-   uint8_t should_flip_corner = (flip == VEL_FLIP_NONE) && flip_corner;
-   if ((flip & VEL_FLIP_X) || should_flip_corner) {
-      vel->vx = -vel->vx;
-   }
-   if ((flip & VEL_FLIP_Y) || should_flip_corner) {
-      vel->vy = -vel->vy;
-   }
-#endif
-   
    return flip;
 }
 
+
+void phys_object_move(struct bounds *obj, const struct velocity *vel,
+                      struct bounds *update) {
+
+   bounds_union_pair(obj, update, update);
+
+   /* add velocity differential bounds */
+   obj->crds.x += vel->vx;
+   obj->crds.y += vel->vy;
+   
+   bounds_union_pair(obj, update, update);
+}
