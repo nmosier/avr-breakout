@@ -16,8 +16,8 @@ static const uint8_t bounds_touch_lut[3][3] =
 /* bounds_touch_outer: detect where bounds touch each other, assuming 
  * the bounds do not overlap.
  * NOTE: all orientations relative to bnds2 */
-uint8_t bounds_touch_outer(const struct bounds *bnds1,
-                           const struct bounds *bnds2) {
+uint8_t bounds_touch_outer(const struct bounds * restrict bnds1,
+                           const struct bounds * restrict bnds2) {
    uint8_t cmp_x[3], cmp_y[3];
 
    cmp_x[0] = (bnds1->crds.x + bnds1->ext.w == bnds2->crds.x);
@@ -42,8 +42,8 @@ uint8_t bounds_touch_outer(const struct bounds *bnds1,
    return BOUNDS_TOUCH_NONE;
 }
 
-uint8_t bounds_touch_inner(const struct bounds *bnds_inner,
-                           const struct bounds *bnds_outer) {
+uint8_t bounds_touch_inner(const struct bounds * restrict bnds_inner,
+                           const struct bounds * restrict bnds_outer) {
    uint8_t cmp_x[3], cmp_y[3];
 
    cmp_x[0] = (bnds_inner->crds.x == bnds_outer->crds.x);

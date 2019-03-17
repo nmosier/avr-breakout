@@ -34,30 +34,31 @@ void display_config() {
    SSD1306_RST_PORT |= (1 << SSD1306_RST);
 }
 
+
+static const uint8_t display_init_cmds[] = {SSD1306_DISPLAYOFF,
+                                            SSD1306_SETDISPLAYCLOCKDIV, 0x80,
+                                            SSD1306_SETMULTIPLEX, 0x3F - 1,
+                                            SSD1306_SETDISPLAYOFFSET, 0x0,
+                                            SSD1306_SETSTARTLINE | 0x0,
+                                            SSD1306_CHARGEPUMP, 0x14,
+                                            SSD1306_MEMORYMODE, 0x00,
+                                            SSD1306_SEGREMAP | 0x1,
+                                            SSD1306_COMSCANDEC,
+                                            SSD1306_SETCOMPINS, 0x12,
+                                            SSD1306_SETCONTRAST, 0xCF,
+                                            SSD1306_SETPRECHARGE, 0xF1,
+                                            SSD1306_SETVCOMDETECT, 0x40,
+                                            SSD1306_DISPLAYALLON_RESUME,
+                                            SSD1306_NORMALDISPLAY,
+                                            SSD1306_DEACTIVATE_SCROLL,
+                                            SSD1306_DISPLAYON};
 void display_init() {
    SLAVE_SELECT;
    SSD1306_COMMAND;
    
    /* write commands */
-   uint8_t cmds[] = {SSD1306_DISPLAYOFF,
-                     SSD1306_SETDISPLAYCLOCKDIV, 0x80,
-                     SSD1306_SETMULTIPLEX, 0x3F - 1,
-                     SSD1306_SETDISPLAYOFFSET, 0x0,
-                     SSD1306_SETSTARTLINE | 0x0,
-                     SSD1306_CHARGEPUMP, 0x14,
-                     SSD1306_MEMORYMODE, 0x00,
-                     SSD1306_SEGREMAP | 0x1,
-                     SSD1306_COMSCANDEC,
-                     SSD1306_SETCOMPINS, 0x12,
-                     SSD1306_SETCONTRAST, 0xCF,
-                     SSD1306_SETPRECHARGE, 0xF1,
-                     SSD1306_SETVCOMDETECT, 0x40,
-                     SSD1306_DISPLAYALLON_RESUME,
-                     SSD1306_NORMALDISPLAY,
-                     SSD1306_DEACTIVATE_SCROLL,
-                     SSD1306_DISPLAYON};
-   uint8_t *cmds_end = cmds + LEN(cmds);
-   for (uint8_t *cmd_it = cmds; cmd_it < cmds_end; ++cmd_it) {
+   const uint8_t *cmds_end = display_init_cmds + LEN(display_init_cmds);
+   for (const uint8_t *cmd_it = display_init_cmds; cmd_it < cmds_end; ++cmd_it) {
       spi_writeb(*cmd_it);
    }
 
@@ -83,12 +84,12 @@ void display_checkerboard() {
    SLAVE_DESELECT;
 }
 
+static const uint8_t display_clear_cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
+                                             SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH - 1};
 void display_clear(uint8_t pix) {
    SLAVE_SELECT;
    SSD1306_COMMAND;
-   const uint8_t cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
-                           SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH-1};
-   spi_write(cmds, LEN(cmds));
+   spi_write(display_clear_cmds, LEN(display_clear_cmds));
 
    SSD1306_DATA;
    uint16_t count = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
