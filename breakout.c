@@ -22,8 +22,6 @@ static void display_update(struct bounds *update_pix);
 
 
 int main(void) {
-   bounds_touch(NULL, NULL);
-   
    /* config & init */
    button_config();
    display_config(); // these names should really be swapped
@@ -51,8 +49,6 @@ int main(void) {
    return 0;
 }
 
-// TODO: need to write helper function that sets the bounds, gets the buffer, writes the
-// buffer, etc.
 static void loop(uint8_t should_display, struct bounds update_arr[2]) {
    phys_ball_freebounce(&ball_pos, &ball_vel, &update_arr[0]);
    paddle_tick(&paddle_pos, &paddle_vel, &update_arr[1]);

@@ -12,21 +12,6 @@
 #include "util.h"
 #include "button.h"
 
-void paddle_display() {
-   uint8_t paddle_page;
-
-   paddle_page = display_row2page(PADDLE_ROW);
-   
-   //SLAVE_SELECT;
-   display_select(paddle_page, paddle_pos.crds.x, 1, paddle_pos.ext.w);
-
-   SSD1306_DATA;
-   for (uint8_t i = 0; i < PADDLE_WIDTH; ++i) {
-      spi_writeb(0b11110000);
-   }
-   //SLAVE_DESELECT;
-}
-
 #define PADDLE_MASK 0xf0
 void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
    uint8_t paddle_page;
@@ -60,18 +45,18 @@ void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
 void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
                  struct bounds *update) {
    touch_t touch = bounds_touch(&screen_bnds, paddle_bnds);
-   uint8_t dv = VEL_FLIP_NONE;
+   uint8_t dv = VEL_NONE;
 
    /* check if at edge of screen */
    if ((touch & TOUCH_LEFT) || (touch & TOUCH_RIGHT)) {
-      dv |= VEL_FLIP_X;
+      dv |= VEL_X;
    }
 
    /* check if button pressed */
    if (button_get_press()) {
-      dv |= VEL_FLIP_X;
+      dv |= VEL_X;
    }
    
    phys_flip_velocity(dv, paddle_vel);
-   phys_object_move(paddle_bnds, paddle_vel, update);
+   phys_object_freemove(paddle_bnds, paddle_vel, update);
 }

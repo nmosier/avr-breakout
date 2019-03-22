@@ -18,9 +18,19 @@ struct velocity {
    int8_t vx;
    int8_t vy;
 };
+
+/*
 #define VEL_FLIP_NONE 0
 #define VEL_FLIP_X    1
 #define VEL_FLIP_Y    2
+*/
+#define VEL_NONE   (0)
+#define VEL_X (1 << 0)
+#define VEL_Y (1 << 1)
+
+inline uint8_t velocity_mask(const struct velocity *vel) {
+   return (vel->vx ? VEL_X : VEL_NONE) | (vel->vy ? VEL_Y : VEL_NONE);
+}
 
 struct extent {
    uint8_t w;

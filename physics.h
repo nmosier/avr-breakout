@@ -11,7 +11,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
                           struct bounds *update);
 uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
                           struct bounds *update);
-void phys_object_move(struct bounds *obj, const struct velocity *vel,
+void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
                       struct bounds *update);
 uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel);
 

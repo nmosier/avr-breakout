@@ -11,55 +11,42 @@
 
 /* prototypes */
 
-uint8_t phys_touch_velocity(uint8_t touch, const struct velocity *vel) {
-   const uint8_t lut[TOUCH_MAX] = {[TOUCH_UPB] = VEL_FLIP_Y,
-                                   [TOUCH_RIGHTB] = VEL_FLIP_X,
-                                   [TOUCH_DOWNB] = VEL_FLIP_Y,
-                                   [TOUCH_LEFTB] = VEL_FLIP_X};
+static uint8_t phys_touch_velocity(touch_t touch, uint8_t vel) {
+   const uint8_t lut[TOUCH_MAX] = {[TOUCH_UPB] = VEL_Y,
+                                   [TOUCH_RIGHTB] = VEL_X,
+                                   [TOUCH_DOWNB] = VEL_Y,
+                                   [TOUCH_LEFTB] = VEL_X};
 
-   uint8_t mask = VEL_FLIP_NONE;
+   uint8_t mask = VEL_NONE;
    for (uint8_t i = 0; i < TOUCH_MAX; ++i) {
       if ((touch & (1 << i))) {
          mask |= lut[i];
       }
    }
 
-   return mask;
-}
-
-uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
-   switch (touch) {
-   case BOUNDS_TOUCH_TOP:
-      return (vel->vy < 0) ? VEL_FLIP_Y : VEL_FLIP_NONE;
-   case BOUNDS_TOUCH_BOTTOM:
-      return (vel->vy > 0) ? VEL_FLIP_Y : VEL_FLIP_NONE;
-
-   case BOUNDS_TOUCH_LEFT:
-      return (vel->vx < 0) ? VEL_FLIP_X : VEL_FLIP_NONE;
-   case BOUNDS_TOUCH_RIGHT:
-      return (vel->vx > 0) ? VEL_FLIP_X : VEL_FLIP_NONE;
-
-   case BOUNDS_TOUCH_CORNER_TOPLEFT:
-      return (vel->vx < 0 && vel->vy < 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
-   case BOUNDS_TOUCH_CORNER_TOPRIGHT:
-      return (vel->vx > 0 && vel->vy < 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
-   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
-      return (vel->vx < 0 && vel->vy > 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
-   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-      return (vel->vx > 0 && vel->vy > 0) ? (VEL_FLIP_X | VEL_FLIP_Y) : VEL_FLIP_NONE;
-      
-   default:
-      return VEL_FLIP_NONE;
-   }
+   return (mask & vel);
 }
 
 void phys_flip_velocity(uint8_t flags, struct velocity *vel) {
-   if ((flags & VEL_FLIP_X)) {
+   if ((flags & VEL_X)) {
       vel->vx = -vel->vx;
    }
-   if ((flags & VEL_FLIP_Y)) {
+   if ((flags & VEL_Y)) {
       vel->vy = -vel->vy;
    }
+}
+
+void ball_collide(const struct bounds *pos, struct velocity *vel, uint8_t velmask) {
+   uint8_t flip = VEL_NONE;
+
+   /* check collisions */
+   flip |= phys_touch_velocity(bounds_touch(pos, &screen_bnds), velmask);
+   flip |= phys_touch_velocity(bounds_touch(&paddle_pos, pos), velmask);
+   // flip |= phys_grid_deflect(pos, vel, update);
+   // FIX: NEED GLOBAL UPDATE QUEUE?
+
+   /* update velocity */
+   phys_flip_velocity(flip, vel);
 }
 
 /* phys_ball_freebounce: Bounce ball around on screen unobstructed. */
@@ -68,11 +55,12 @@ void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update) {
 
-   uint8_t flip = VEL_FLIP_NONE; // velocity flip flags
+   uint8_t flip = VEL_NONE; // velocity flip flags
 
    /* check velocity deflections  */
-   flip |= phys_touch_velocity(bounds_touch(ball_pos, &screen_bnds), ball_vel);
-   flip |= phys_touch_velocity(bounds_touch(&paddle_pos, ball_pos), ball_vel);
+   uint8_t velmask = velocity_mask(ball_vel);
+   flip |= phys_touch_velocity(bounds_touch(ball_pos, &screen_bnds), velmask);
+   flip |= phys_touch_velocity(bounds_touch(&paddle_pos, ball_pos), velmask);
    flip |= phys_grid_deflect(ball_pos, ball_vel, update);
 
    /* apply velocity flip */
@@ -83,7 +71,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    memcpy(&ball_pos_old, ball_pos, sizeof(*ball_pos));
 
    /* update position given velocity */
-   phys_object_move(ball_pos, ball_vel, update);
+   phys_object_freemove(ball_pos, ball_vel, update);
    
    /* insert new position into blist */
    bounds_union(update, &ball_pos_old, ball_pos, NULL);
@@ -102,7 +90,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
 
    /* if no contact, then there will be no collision with grid */
    if (touch == TOUCH_NONE) {
-      return VEL_FLIP_NONE;
+      return VEL_NONE;
    }
 
    /* otherwise, advance ball along current trajectory and find the union grid bounds */
@@ -123,7 +111,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
    uint8_t row_end = grid_path.crds.y + grid_path.ext.h;
    uint8_t col_end = grid_path.crds.x + grid_path.ext.w;
 
-   flip = flip_corner = VEL_FLIP_NONE;
+   flip = flip_corner = VEL_NONE;
    for (uint8_t row = grid_path.crds.y; row < row_end; ++row) {
       for (uint8_t col = grid_path.crds.x; col < col_end; ++col) {
          if (grid_testblock(row, col)) {
@@ -135,12 +123,12 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
             
             if (diff_col && diff_row) {
                /* corner case (pun [not] intended) */
-               flip_corner = VEL_FLIP_X | VEL_FLIP_Y;
+               flip_corner = VEL_X | VEL_Y;
             } else {
                /* side case */
-               uint8_t flip_mask = diff_col ? VEL_FLIP_X : VEL_FLIP_Y;
+               uint8_t flip_mask = diff_col ? VEL_X : VEL_Y;
                
-               if ((flip_mask & flip) == VEL_FLIP_NONE) {
+               if ((flip_mask & flip) == VEL_NONE) {
                   flip |= flip_mask;
                   grid_clearblock(row, col);
                   bounds_union(update, &update_block, NULL);
@@ -154,7 +142,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
 }
 
 
-void phys_object_move(struct bounds *obj, const struct velocity *vel,
+void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
                       struct bounds *update) {
 
    bounds_union_pair(obj, update, update);
