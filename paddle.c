@@ -59,18 +59,12 @@ void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
 
 void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
                  struct bounds *update) {
-   uint8_t touch = bounds_touch_inner(&screen_bnds, paddle_bnds);
+   touch_t touch = bounds_touch(&screen_bnds, paddle_bnds);
    uint8_t dv = VEL_FLIP_NONE;
 
    /* check if at edge of screen */
-   switch (touch) {
-   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
+   if ((touch & TOUCH_LEFT) || (touch & TOUCH_RIGHT)) {
       dv |= VEL_FLIP_X;
-      break;
-      
-   default:
-      break;
    }
 
    /* check if button pressed */

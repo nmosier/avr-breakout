@@ -11,6 +11,21 @@
 
 /* prototypes */
 
+uint8_t phys_touch_velocity(uint8_t touch, const struct velocity *vel) {
+   const uint8_t lut[TOUCH_MAX] = {[TOUCH_UPB] = VEL_FLIP_Y,
+                                   [TOUCH_RIGHTB] = VEL_FLIP_X,
+                                   [TOUCH_DOWNB] = VEL_FLIP_Y,
+                                   [TOUCH_LEFTB] = VEL_FLIP_X};
+
+   uint8_t mask = VEL_FLIP_NONE;
+   for (uint8_t i = 0; i < TOUCH_MAX; ++i) {
+      if ((touch & (1 << i))) {
+         mask |= lut[i];
+      }
+   }
+
+   return mask;
+}
 
 uint8_t phys_adjust_velocity(uint8_t touch, struct velocity *vel) {
    switch (touch) {
@@ -56,8 +71,8 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    uint8_t flip = VEL_FLIP_NONE; // velocity flip flags
 
    /* check velocity deflections  */
-   flip |= phys_adjust_velocity(bounds_touch_inner(ball_pos, &screen_bnds), ball_vel);
-   flip |= phys_adjust_velocity(bounds_touch_outer(&paddle_pos, ball_pos), ball_vel);
+   flip |= phys_touch_velocity(bounds_touch(ball_pos, &screen_bnds), ball_vel);
+   flip |= phys_touch_velocity(bounds_touch(&paddle_pos, ball_pos), ball_vel);
    flip |= phys_grid_deflect(ball_pos, ball_vel, update);
 
    /* apply velocity flip */
@@ -83,10 +98,10 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
    project_round(bnds, &block_bnds, &g_proj_pix2grid, PROJ_MODE_FUZZY);
 
    /* check contact of bnds and bounding box */
-   uint8_t touch = bounds_touch_inner(bnds, &block_bnds);
+   uint8_t touch = bounds_touch(bnds, &block_bnds);
 
    /* if no contact, then there will be no collision with grid */
-   if (touch == BOUNDS_TOUCH_NONE) {
+   if (touch == TOUCH_NONE) {
       return VEL_FLIP_NONE;
    }
 

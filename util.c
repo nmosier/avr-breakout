@@ -7,6 +7,47 @@
 #include "SSD1306.h"
 #include "util.h"
 
+touch_t bounds_touch(const struct bounds * restrict bnds1,
+                     const struct bounds * restrict bnds2) {
+
+   touch_t mask = BOUNDS_TOUCH_NONE;
+   uint8_t cmp_x = (umax8(bnds1->crds.x, bnds2->crds.x) <
+                    umin8(bnds1->crds.x + bnds1->ext.w,
+                          bnds2->crds.x + bnds2->ext.w));
+   uint8_t cmp_y = (umax8(bnds1->crds.y, bnds2->crds.y) <
+               umin8(bnds1->crds.y + bnds1->ext.h,
+                     bnds2->crds.y + bnds2->ext.h));
+
+   uint8_t bnds_x[2][2] =
+      {{bnds1->crds.x, bnds1->crds.x + bnds1->ext.w},
+       {bnds2->crds.x, bnds2->crds.x + bnds2->ext.w}};
+   uint8_t bnds_y[2][2] =
+      {{bnds1->crds.y, bnds1->crds.y + bnds1->ext.h},
+       {bnds2->crds.y, bnds2->crds.y + bnds2->ext.h}};
+
+   
+   for (uint8_t j = 0; j < 2; ++j) {
+      for (uint8_t i = 0; i < 2; ++i) {
+         if (cmp_y && bnds_x[0][j] == bnds_x[1][i]) {
+            /* equal bounds and other dimension overlaps */
+            mask |= (i == 0) ? TOUCH_LEFT : TOUCH_RIGHT;
+         }
+      }
+   }
+
+   for (uint8_t j = 0; j < 2; ++j) {
+      for (uint8_t i = 0; i < 2; ++i) {
+         if (cmp_x && bnds_y[0][j] == bnds_y[1][i]) {
+            /* equal bounds and other dimension overlaps */
+            mask |= (i == 0) ? TOUCH_UP : TOUCH_DOWN;
+         }
+      }
+   }
+
+   return mask;
+}
+
+#if 0
 static const uint8_t bounds_touch_lut[3][3] =
    {{BOUNDS_TOUCH_CORNER_TOPLEFT,  BOUNDS_TOUCH_LEFT,  BOUNDS_TOUCH_CORNER_BOTTOMLEFT},
     {BOUNDS_TOUCH_TOP,             BOUNDS_OVERLAP,     BOUNDS_TOUCH_BOTTOM},
@@ -70,6 +111,7 @@ uint8_t bounds_touch_inner(const struct bounds * restrict bnds_inner,
    }
    return BOUNDS_TOUCH_NONE;
 }
+#endif
 
 /* NOTE: un can be an alias of one of the constituent bounds.
  */

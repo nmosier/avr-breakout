@@ -17,11 +17,13 @@ static void loop(uint8_t should_display, struct bounds *update_arr);
 static uint8_t check_game_over(void);
 static void display_update(struct bounds *update_pix);
 
-#define UPDATE_PERIOD 2
+#define UPDATE_PERIOD 1
 #define GAME_NEVER_ENDS 1
 
 
 int main(void) {
+   bounds_touch(NULL, NULL);
+   
    /* config & init */
    button_config();
    display_config(); // these names should really be swapped

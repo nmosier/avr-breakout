@@ -89,6 +89,25 @@ enum {BOUNDS_TOUCH_NONE,
       BOUNDS_OVERLAP
 };
 
+#define TOUCH_UPB    0
+#define TOUCH_RIGHTB 1
+#define TOUCH_DOWNB  2
+#define TOUCH_LEFTB  3
+
+#define TOUCH_MAKE(i) ((touch_t) (1 << i))
+
+#define TOUCH_UP    TOUCH_MAKE(TOUCH_UPB)
+#define TOUCH_RIGHT TOUCH_MAKE(TOUCH_RIGHTB)
+#define TOUCH_DOWN  TOUCH_MAKE(TOUCH_DOWNB)
+#define TOUCH_LEFT  TOUCH_MAKE(TOUCH_LEFTB)
+#define TOUCH_NONE      ((touch_t) 0)
+
+#define TOUCH_MAX   4
+
+typedef uint8_t touch_t;
+
+touch_t bounds_touch(const struct bounds * restrict bnds1,
+                     const struct bounds * restrict bnds2);
 uint8_t bounds_touch_outer(const struct bounds * restrict bnds1,
                            const struct bounds * restrict bnds2);
 uint8_t bounds_touch_inner(const struct bounds * restrict bnds_inner,

@@ -5,6 +5,7 @@
 #define __PHYSICS_H
 
 void phys_flip_velocity(uint8_t flags, struct velocity *vel);
+
 void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update);
