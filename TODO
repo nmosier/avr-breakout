@@ -1,0 +1,7 @@
+TODO
+
+0. Do not handle corners separately. Return touch as mask of flags.
+1. BUG in phys_velocity_adjust.
+* connect keyboard code.
+* write interrupt handler triggered by timer to update ball, etc.
+

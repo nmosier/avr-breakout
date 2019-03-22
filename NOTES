@@ -1,0 +1,6 @@
+BREAKOUT
+
+
+GRAPHICS
+ - buffer frames are drawn to using an array of drawing functions
+ - updates are requested as return values from `physics' functions

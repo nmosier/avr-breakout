@@ -14,29 +14,35 @@
 #include "paddle.h"
 
 static void loop(uint8_t should_display, struct bounds *update_arr);
-
+static uint8_t check_game_over(void);
 static void display_update(struct bounds *update_pix);
 
-#define UPDATE_PERIOD 4
+#define UPDATE_PERIOD 2
+#define GAME_NEVER_ENDS 1
+
 
 int main(void) {
-   struct bounds bnds = {.crds = {.x = 5, .y = 2},
-                         .ext  = {.w = 6,  .h = 2}};
-   uint8_t buf[12];
-   
+   /* config & init */
+   button_config();
    display_config(); // these names should really be swapped
+   SLAVE_SELECT; // Always have slave selected
    display_init();
-   display_clear(0x00); // clear display
-   
-   /* set up grid */
-   SLAVE_SELECT;
-   canvas_display_full();
 
-   struct bounds update_arr[2];
-   memset(update_arr, 0, sizeof(update_arr));
-   for (uint8_t update_counter = 0; ; ++update_counter) {
-      loop((update_counter % UPDATE_PERIOD) == 0, update_arr);
-   }
+   //while(1) {
+      display_clear(0x00); // clear display
+      
+      /* set up grid */
+      canvas_display_full();
+      
+      struct bounds update_arr[2];
+      memset(update_arr, 0, sizeof(update_arr));
+      for (uint8_t update_counter = 0;
+           GAME_NEVER_ENDS || !check_game_over();
+           ++update_counter) {
+         
+         loop((update_counter % UPDATE_PERIOD) == 0, update_arr);
+      }
+      //}
    
    SLAVE_DESELECT;
    
@@ -46,13 +52,6 @@ int main(void) {
 // TODO: need to write helper function that sets the bounds, gets the buffer, writes the
 // buffer, etc.
 static void loop(uint8_t should_display, struct bounds update_arr[2]) {
-   struct bounds update_pix_1, update_pix_2;
-
-   if (should_display) {
-      memset(&update_pix_1, 0, sizeof(update_pix_1));
-      memset(&update_pix_2, 0, sizeof(update_pix_2));
-   }
-   
    phys_ball_freebounce(&ball_pos, &ball_vel, &update_arr[0]);
    paddle_tick(&paddle_pos, &paddle_vel, &update_arr[1]);
 
@@ -61,7 +60,6 @@ static void loop(uint8_t should_display, struct bounds update_arr[2]) {
       display_update(&update_arr[1]);
       memset(update_arr, 0, sizeof(*update_arr) * 2);
    }
-   
 }
 
 static void display_update(struct bounds *update_pix) {
@@ -80,4 +78,18 @@ static void display_update(struct bounds *update_pix) {
    
    SSD1306_DATA;
    spi_write(buf, bufsize);
+}
+
+static uint8_t check_game_over(void) {
+   uint8_t touch = bounds_touch_inner(&ball_pos, &screen_bnds);
+
+   switch (touch) {
+   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
+   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
+   case BOUNDS_TOUCH_BOTTOM:
+      return 1;
+      
+   default:
+      return 0;
+   }
 }

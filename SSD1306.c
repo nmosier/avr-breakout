@@ -53,20 +53,15 @@ static const uint8_t display_init_cmds[] = {SSD1306_DISPLAYOFF,
                                             SSD1306_DEACTIVATE_SCROLL,
                                             SSD1306_DISPLAYON};
 void display_init() {
-   SLAVE_SELECT;
-   SSD1306_COMMAND;
-   
-   /* write commands */
-   const uint8_t *cmds_end = display_init_cmds + LEN(display_init_cmds);
-   for (const uint8_t *cmd_it = display_init_cmds; cmd_it < cmds_end; ++cmd_it) {
-      spi_writeb(*cmd_it);
-   }
+   //SLAVE_SELECT;
+   SSD1306_COMMAND;   
+   spi_write(display_init_cmds, LEN(display_init_cmds));
 
-   SLAVE_DESELECT;
+   //SLAVE_DESELECT;
 }
 
 void display_checkerboard() {
-   SLAVE_SELECT;
+   //SLAVE_SELECT;
 
    /* commands: set cursor to (0,0) */
    SSD1306_COMMAND;
@@ -81,13 +76,13 @@ void display_checkerboard() {
       spi_writeb(0xaa);
    }
    
-   SLAVE_DESELECT;
+   //SLAVE_DESELECT;
 }
 
 static const uint8_t display_clear_cmds[] = {SSD1306_PAGEADDR, 0x0, 0xFF,
                                              SSD1306_COLUMNADDR, 0x0, DISPLAY_WIDTH - 1};
 void display_clear(uint8_t pix) {
-   SLAVE_SELECT;
+   //SLAVE_SELECT;
    SSD1306_COMMAND;
    spi_write(display_clear_cmds, LEN(display_clear_cmds));
 
@@ -97,7 +92,7 @@ void display_clear(uint8_t pix) {
       spi_writeb(pix);
    }
 
-   SLAVE_DESELECT;
+   //SLAVE_DESELECT;
 }                                  
 
 void display_select(uint8_t page, uint8_t col, uint8_t height,

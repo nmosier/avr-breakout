@@ -37,11 +37,11 @@ uint8_t grid[GRID_HEIGHT_BYTES][GRID_WIDTH_BYTES] =
 /* location represented by left display column of paddle */
 //uint8_t paddle_col = (DISPLAY_WIDTH - PADDLE_WIDTH) / 2;
 //uint8_t paddle_col = 10;
-struct bounds paddle_pos = {.crds = {.x = 10,
+struct bounds paddle_pos = {.crds = {.x = (DISPLAY_WIDTH - PADDLE_WIDTH) / 2,
                                      .y = DISPLAY_HEIGHT - PADDLE_HEIGHT},
                             .ext = {.w = PADDLE_WIDTH, .h = PADDLE_HEIGHT}};
 
-struct velocity paddle_vel = {.vx = 1, .vy = 0};
+struct velocity paddle_vel = {.vx = 2, .vy = 0};
 
 //////////////// BALL  ///////////////
 /* note: currently only supports one ball
