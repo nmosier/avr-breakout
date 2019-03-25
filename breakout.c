@@ -79,15 +79,7 @@ static void display_update(struct bounds *update_pix) {
 }
 
 static uint8_t check_game_over(void) {
-   uint8_t touch = bounds_touch_inner(&ball_pos, &screen_bnds);
+   uint8_t touch = bounds_touch(&ball_pos, &screen_bnds);
 
-   switch (touch) {
-   case BOUNDS_TOUCH_CORNER_BOTTOMLEFT:
-   case BOUNDS_TOUCH_CORNER_BOTTOMRIGHT:
-   case BOUNDS_TOUCH_BOTTOM:
-      return 1;
-      
-   default:
-      return 0;
-   }
+   return (touch & TOUCH_DOWN) ? 1 : 0;
 }

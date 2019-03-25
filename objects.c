@@ -12,6 +12,11 @@
 #include "objects.h"
 #include "util.h"
 
+//////////// OBJECTS ////////////
+/* object pool */
+struct object_pool g_obj_pool;
+
+
 /////////////// SCREEN ///////////////
 struct bounds screen_bnds = {.crds = {.x = 0,
                                       .y = 0},

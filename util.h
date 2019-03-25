@@ -19,11 +19,6 @@ struct velocity {
    int8_t vy;
 };
 
-/*
-#define VEL_FLIP_NONE 0
-#define VEL_FLIP_X    1
-#define VEL_FLIP_Y    2
-*/
 #define VEL_NONE   (0)
 #define VEL_X (1 << 0)
 #define VEL_Y (1 << 1)
@@ -87,6 +82,7 @@ UMIN_TEMPLATE(8);
 UMAX_TEMPLATE(8);
 ABSU_TEMPLATE(8);
 
+/*
 enum {BOUNDS_TOUCH_NONE,
       BOUNDS_TOUCH_LEFT,
       BOUNDS_TOUCH_RIGHT,
@@ -98,6 +94,7 @@ enum {BOUNDS_TOUCH_NONE,
       BOUNDS_TOUCH_CORNER_BOTTOMRIGHT,
       BOUNDS_OVERLAP
 };
+*/
 
 #define TOUCH_UPB    0
 #define TOUCH_RIGHTB 1
@@ -118,10 +115,12 @@ typedef uint8_t touch_t;
 
 touch_t bounds_touch(const struct bounds * restrict bnds1,
                      const struct bounds * restrict bnds2);
+/*
 uint8_t bounds_touch_outer(const struct bounds * restrict bnds1,
                            const struct bounds * restrict bnds2);
 uint8_t bounds_touch_inner(const struct bounds * restrict bnds_inner,
                            const struct bounds * restrict bnds_outer);
+*/
 void bounds_union_pair(const struct bounds *bnds1, const struct bounds *bnds2,
                   struct bounds *un);
 void bounds_union(struct bounds *un, ...);
@@ -139,13 +138,6 @@ inline uint8_t bounds_null(const struct bounds *un) {
    return !(un->crds.x || un->crds.y);
 };
 
-///////////// BOUNDS LIST /////////////
-inline void blist_init(struct bounds_list **blist) {
-   *blist = NULL;
-}
-
-void blist_insert(const struct bounds *bnds, struct bounds_list **blist);
-void blist_delete(struct bounds_list **blist);
 
 /////////// PROJECTIONS ///////////
 uint8_t project_up(const struct bounds *src, struct bounds *dst,

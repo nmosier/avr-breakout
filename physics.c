@@ -42,8 +42,7 @@ void ball_collide(const struct bounds *pos, struct velocity *vel, uint8_t velmas
    /* check collisions */
    flip |= phys_touch_velocity(bounds_touch(pos, &screen_bnds), velmask);
    flip |= phys_touch_velocity(bounds_touch(&paddle_pos, pos), velmask);
-   // flip |= phys_grid_deflect(pos, vel, update);
-   // FIX: NEED GLOBAL UPDATE QUEUE?
+   flip |= phys_grid_deflect(pos, vel);
 
    /* update velocity */
    phys_flip_velocity(flip, vel);
@@ -55,16 +54,13 @@ void phys_ball_freebounce(struct bounds *ball_pos,
                           struct velocity *ball_vel,
                           struct bounds *update) {
 
-   uint8_t flip = VEL_NONE; // velocity flip flags
-
    /* check velocity deflections  */
+#if 1
    uint8_t velmask = velocity_mask(ball_vel);
-   flip |= phys_touch_velocity(bounds_touch(ball_pos, &screen_bnds), velmask);
-   flip |= phys_touch_velocity(bounds_touch(&paddle_pos, ball_pos), velmask);
-   flip |= phys_grid_deflect(ball_pos, ball_vel, update);
-
-   /* apply velocity flip */
-   phys_flip_velocity(flip, ball_vel);
+   ball_collide(ball_pos, ball_vel, velmask);
+#else
+   // obj_bnded_detect_collision(
+#endif
    
    /* initialize update bounds */
    struct bounds ball_pos_old;
@@ -77,9 +73,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    bounds_union(update, &ball_pos_old, ball_pos, NULL);
 }
 
-
-uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
-                       struct bounds *update) {
+uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    struct bounds block_bnds;
 
    /* get bounding box for bnds in grid */
@@ -118,9 +112,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
             /* found collision */
             uint8_t diff_col = (col != grid_ball.crds.x);
             uint8_t diff_row = (row != grid_ball.crds.y);
-            struct bounds update_block = {.crds = {.x = col * 8, .y = row},
-                                          .ext = {.w = 8, .h = 1}};
-            
+
             if (diff_col && diff_row) {
                /* corner case (pun [not] intended) */
                flip_corner = VEL_X | VEL_Y;
@@ -131,7 +123,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel,
                if ((flip_mask & flip) == VEL_NONE) {
                   flip |= flip_mask;
                   grid_clearblock(row, col);
-                  bounds_union(update, &update_block, NULL);
+                  grid_displayblock(row, col);
                }
             }
          }
@@ -152,4 +144,25 @@ void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
    obj->crds.y += vel->vy;
    
    bounds_union_pair(obj, update, update);
+}
+
+
+/* collision detection for bounded objects */
+touch_t obj_bnded_detect_collision(const struct object * restrict obj1,
+                                   const struct object * restrict obj2) {
+
+   const struct bounds * restrict bnds1 = &obj1->obj_un.obj_bnded.obj_bnds,
+                       * restrict bnds2 = &obj2->obj_un.obj_bnded.obj_bnds;
+   touch_t touch = bounds_touch(bnds1, bnds2);
+   return touch;
+}
+
+/* collide two bounded objects */
+void obj_bnded_collide(struct object *obj1, struct object *obj2, touch_t touch) {
+   struct velocity *vel1 = &obj1->obj_un.obj_bnded.obj_vel,
+                   *vel2 = &obj2->obj_un.obj_bnded.obj_vel;
+   uint8_t velmask = velocity_mask(vel1);
+   uint8_t velflip = phys_touch_velocity(touch, velmask);
+   phys_flip_velocity(velflip, vel1);
+   phys_flip_velocity(velflip, vel2);
 }

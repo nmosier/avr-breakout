@@ -1,7 +1,21 @@
 TODO
 
-0. Do not handle corners separately. Return touch as mask of flags.
-1. BUG in phys_velocity_adjust.
 * connect keyboard code.
 * write interrupt handler triggered by timer to update ball, etc.
 
+Object Collision
+- passive: function pointer -- handle collisions of other objects into this object.
+           - e.g. GRID will have different collision function from generic object.
+- active: function pointer -- collide into other objects. Probably can be standard function.
+
+``Object'' struct:
+ - collide_passive
+ - collide_active
+ - bounds
+ - velocity
+
+Object pool: contains array of all objects. At each tick, each object is collided with all other
+             objects and then its velocity is updated.
+
+
+WAIT. The objects needn't even have bounds. Need to distinguish between the types.

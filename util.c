@@ -10,7 +10,7 @@
 touch_t bounds_touch(const struct bounds * restrict bnds1,
                      const struct bounds * restrict bnds2) {
 
-   touch_t mask = BOUNDS_TOUCH_NONE;
+   touch_t mask = TOUCH_NONE;
    uint8_t cmp_x = (umax8(bnds1->crds.x, bnds2->crds.x) <
                     umin8(bnds1->crds.x + bnds1->ext.w,
                           bnds2->crds.x + bnds2->ext.w));
@@ -122,40 +122,6 @@ uint8_t bounds_should_union(const struct bounds *bnds1,
    /* divide by 8 b/c bounds not yet downsized for display */
    return (dA / 8 < DISPLAY_SELECT_IOBYTES) ? 1 : 0;
 }
-
-void blist_insert(const struct bounds *bnds, struct bounds_list **blist) {
-   struct bounds un;
-   struct bounds_list *it, **prev;
-   
-   for (prev = blist, it = *blist; it; prev = &it->next, it = *prev) {
-      if (bounds_should_union(bnds, &it->bnds, &un)) {
-         /* 1. remove entry in list.
-          * 2. insert union into list.
-          */
-         memcpy(&it->bnds, &un, sizeof(un));
-         break;
-      }
-   }
-
-   /* if no favorable union found, insert at end of list */
-   if (it == NULL) {
-      *prev = malloc(sizeof(*it));
-      memcpy(&(*prev)->bnds, bnds, sizeof(*bnds));
-      (*prev)->next = NULL;
-   }
-}
-
-void blist_delete(struct bounds_list **blist) {
-   struct bounds_list *it, *del;
-
-   it = *blist;
-   while (it) {
-      del = it;
-      it = it->next;
-      free(del);
-   }
-}
-
 
 //////////// PROJECTIONS ////////////
 
