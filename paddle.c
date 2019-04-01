@@ -13,22 +13,23 @@
 #include "button.h"
 
 #define PADDLE_MASK 0xf0
-void paddle_draw(uint8_t *buf, const struct bounds *bnds) {
+void paddle_draw(uint8_t *buf, const struct object *paddle, const struct bounds *bnds) {
    uint8_t paddle_page;
    uint8_t buf_page;
+   const struct bounds *paddle_pos = &paddle->obj_un.obj_bnded.obj_bnds;
 
    /* note: paddle will always be fully within one page, so don't need to worry
     * about multipage drawing */
    paddle_page = display_row2page(PADDLE_ROW);
    buf_page = bnds->crds.y; // y is in pages
    if (paddle_page >= buf_page && paddle_page < buf_page + bnds->ext.h
-       && paddle_pos.crds.x + paddle_pos.ext.w > bnds->crds.x
-       && paddle_pos.crds.x < bnds->crds.x + bnds->ext.w) {
+       && paddle_pos->crds.x + paddle_pos->ext.w > bnds->crds.x
+       && paddle_pos->crds.x < bnds->crds.x + bnds->ext.w) {
       uint8_t onscreen_width, onscreen_left, onscreen_offset;
       
       /* find onscreen width of paddle */
-      onscreen_left = umax8(paddle_pos.crds.x, bnds->crds.x);
-      onscreen_width = umin8(paddle_pos.crds.x + paddle_pos.ext.w,
+      onscreen_left = umax8(paddle_pos->crds.x, bnds->crds.x);
+      onscreen_width = umin8(paddle_pos->crds.x + paddle_pos->ext.w,
                              bnds->crds.x + bnds->ext.w) - onscreen_left;
       onscreen_offset = onscreen_left - bnds->crds.x;
       
