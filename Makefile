@@ -4,6 +4,7 @@
 ##########------------------------------------------------------##########
 
 MCU   = atmega48a
+# MCU = atmega128a
 F_CPU = 20000000UL
 BAUD  = 9600UL
 ## Also try BAUD = 19200 or 38400 if you're feeling lucky.
@@ -21,7 +22,8 @@ LIBDIR = ../AVR-Programming-Library
 
 PROGRAMMER_TYPE = usbtiny
 # extra arguments to avrdude: baud rate, chip type, -F flag, etc.
-PROGRAMMER_ARGS = -p m48	
+PROGRAMMER_ARGS = -p m48
+# PROGRAMMER_ARGS = -p m128
 
 ##########------------------------------------------------------##########
 ##########                  Program Locations                   ##########
@@ -58,7 +60,7 @@ HEADERS=$(SOURCES:.c=.h)
 
 ## Compilation options, type man avr-gcc if you're curious.
 CPPFLAGS = -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) -I. -I$(LIBDIR)
-CFLAGS = -Os -std=gnu99 -Wall
+CFLAGS = -g -Os -std=gnu99 -Wall
 ## Use short (8-bit) data types 
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums 
 ## Splits up object files per function
