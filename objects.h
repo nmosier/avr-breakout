@@ -6,16 +6,20 @@
 
 #include <stdint.h>
 #include "SSD1306.h"
+//#include "canvas.h"
 #include "util.h"
 
 //////////// OBJECT ////////////
+
+// note: bounds should always be multiples of 8
+struct object;
+struct graphics_layer {
+   void (*draw)(uint8_t *buf, const struct object *obj, const struct bounds *bnds);
+   // future: perhaps add bounds? 
+};
+
 struct object {
    enum object_kind {OBJ_K_BOUNDED, OBJ_K_GRID} obj_kind;
-   touch_t (*obj_detect_collision)(const struct object * restrict self,
-                                   const struct object * restrict other);
-   touch_t (*obj_collide)(struct object *self,
-                          const struct object * other,
-                          uint8_t agent);
    union {
       struct {
          struct bounds obj_bnds;
@@ -25,6 +29,8 @@ struct object {
       struct {
       } obj_grid;
    } obj_un;
+   struct bounds obj_update;
+   struct graphics_layer obj_graphics;
 };
 
 #define OBJ_POOL_MAXSIZE 16
@@ -32,8 +38,11 @@ struct object_pool {
    struct object arr[OBJ_POOL_MAXSIZE];
    uint8_t cnt;
 };
-extern struct object_pool g_obj_pool;
-
+extern struct object_pool g_objpool;
+void objpool_init(struct object_pool *objpool);
+void objpool_move(struct object_pool *objpool);
+void objpool_update(struct object_pool *objpool);
+void objpool_interact(struct object_pool *objpool);
 
 //////////// SCREEN ///////////
 extern struct bounds screen_bnds;
