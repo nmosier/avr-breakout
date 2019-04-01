@@ -19,6 +19,6 @@ void ball_collide(const struct bounds *pos, struct velocity *vel, uint8_t velmas
 /* COLLISION PROTOTYPES */
 touch_t obj_bnded_detect_collision(const struct object * restrict self,
                                    const struct object * restrict other);
-
+void obj_bnded_collide(struct object *obj1, struct object *obj2, touch_t touch);
 
 #endif

@@ -10,7 +10,6 @@
 #include "physics.h"
 
 /* prototypes */
-
 static uint8_t phys_touch_velocity(touch_t touch, uint8_t vel) {
    const uint8_t lut[TOUCH_MAX] = {[TOUCH_UPB] = VEL_Y,
                                    [TOUCH_RIGHTB] = VEL_X,
@@ -133,7 +132,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    return flip;
 }
 
-
+#if 1
 void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
                       struct bounds *update) {
 
@@ -145,7 +144,7 @@ void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
    
    bounds_union_pair(obj, update, update);
 }
-
+#endif
 
 /* collision detection for bounded objects */
 touch_t obj_bnded_detect_collision(const struct object * restrict obj1,
@@ -159,10 +158,8 @@ touch_t obj_bnded_detect_collision(const struct object * restrict obj1,
 
 /* collide two bounded objects */
 void obj_bnded_collide(struct object *obj1, struct object *obj2, touch_t touch) {
-   struct velocity *vel1 = &obj1->obj_un.obj_bnded.obj_vel,
-                   *vel2 = &obj2->obj_un.obj_bnded.obj_vel;
+   struct velocity *vel1 = &obj1->obj_un.obj_bnded.obj_vel;
    uint8_t velmask = velocity_mask(vel1);
    uint8_t velflip = phys_touch_velocity(touch, velmask);
    phys_flip_velocity(velflip, vel1);
-   phys_flip_velocity(velflip, vel2);
 }
