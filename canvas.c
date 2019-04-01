@@ -45,9 +45,10 @@ void grid_displayblock(uint8_t row, uint8_t col) {
 }
 
 /* grid_display_layer: OR underlying grid to buffer.
+ * NOTE: object is passed to conform to standard graphics layer interface, but is not used.
  * TODO: handle buffers that aren't aligned with grid (in x-axis).
  */
-void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
+void grid_display_layer(uint8_t *buf, const struct object *obj, const struct bounds *bnds) {
    uint8_t col_begin, col_end, row_begin, row_end;
 
    col_begin = bnds->crds.x;
@@ -70,6 +71,8 @@ void grid_display_layer(uint8_t *buf, const struct bounds *bnds) {
 
 //////// SCREEN BUFFER /////////
 
+/* TODO: merge graphics layers into object struct. */
+#if 0
 struct graphics_layer graphics_layers[] =
    {
     {grid_display_layer},
@@ -91,6 +94,17 @@ void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds) {
       layer->draw(buf, bnds);
    }
 }
+#else
+void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds) {
+   const struct object *obj_begin = g_objpool.arr,
+                       *obj_end = obj_begin + g_objpool.cnt;
+   for (const struct object *obj_it = obj_begin; obj_it != obj_end; ++obj_it) {
+      if (obj_it->obj_graphics.draw) {
+         obj_it->obj_graphics.draw(buf, obj_it, bnds);
+      }
+   }
+}
+#endif
 
 /* note: end is one past last pixel drawn */
 void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,
@@ -199,4 +213,23 @@ void canvas_display_updates(struct bounds_list **blist) {
       SSD1306_DATA;
       spi_write(buf, bufsize);
    }
+}
+
+
+void display_update(struct bounds *update_pix) {
+   /* convert pixel update bounds to screen coordinates */
+   struct bounds update_scrn;
+   project_down(update_pix, &update_scrn, &g_proj_pix2scrn, PROJ_MODE_FUZZY);
+
+   display_selectbnds(&update_scrn);
+
+   /* draw update buffer */
+   uint8_t bufsize = bounds_area(&update_scrn);
+   uint8_t buf[bufsize];
+
+   memset(buf, 0, bufsize);
+   canvas_getbuffer(buf, &update_scrn);
+   
+   SSD1306_DATA;
+   spi_write(buf, bufsize);
 }

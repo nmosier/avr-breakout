@@ -6,14 +6,9 @@
 #define __CANVAS_H
 
 #include "SSD1306.h"
-#include "objects.h"
 #include "util.h"
+#include "objects.h"
 
-// note: bounds should always be multiples of 8
-struct graphics_layer {
-   void (*draw)(uint8_t *buf, const struct bounds *bnds);
-   // future: perhaps add bounds? 
-};
 
 /* externs */
 extern const struct projection g_proj_pix2grid;
@@ -43,5 +38,7 @@ void bounds_create(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
                    struct bounds *bnds);
 void canvas_display_full();
 void canvas_display_updates(struct bounds_list **blist);
+
+void display_update(struct bounds *update_pix);
 
 #endif
