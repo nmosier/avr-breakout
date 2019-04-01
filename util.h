@@ -115,12 +115,6 @@ typedef uint8_t touch_t;
 
 touch_t bounds_touch(const struct bounds * restrict bnds1,
                      const struct bounds * restrict bnds2);
-/*
-uint8_t bounds_touch_outer(const struct bounds * restrict bnds1,
-                           const struct bounds * restrict bnds2);
-uint8_t bounds_touch_inner(const struct bounds * restrict bnds_inner,
-                           const struct bounds * restrict bnds_outer);
-*/
 void bounds_union_pair(const struct bounds *bnds1, const struct bounds *bnds2,
                   struct bounds *un);
 void bounds_union(struct bounds *un, ...);
