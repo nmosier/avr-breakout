@@ -1,7 +1,7 @@
 TODO
 
-1. Add grid back in.
-
+1. Create global cleanup update queue for objpool.
+2. Factor out iteration in various objpool methods.
 
 Object Collision
 - passive: function pointer -- handle collisions of other objects into this object.

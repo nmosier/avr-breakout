@@ -31,6 +31,7 @@ struct object {
    } obj_un;
    struct bounds obj_update;
    struct graphics_layer obj_graphics;
+   void (*obj_special)(struct object *obj);
 };
 
 #define OBJ_POOL_MAXSIZE 16
@@ -43,6 +44,7 @@ void objpool_init(struct object_pool *objpool);
 void objpool_move(struct object_pool *objpool);
 void objpool_update(struct object_pool *objpool);
 void objpool_interact(struct object_pool *objpool);
+void objpool_special(struct object_pool *objpool);
 
 //////////// SCREEN ///////////
 extern struct bounds screen_bnds;

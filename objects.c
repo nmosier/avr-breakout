@@ -16,6 +16,7 @@
 #include "util.h"
 #include "ball.h"
 #include "paddle.h"
+#include "breakout.h"
 
 static struct object g_obj_screen;
 static struct object g_obj_grid;
@@ -128,6 +129,16 @@ void objpool_update(struct object_pool *objpool) {
    }
 }
 
+void objpool_special(struct object_pool *objpool) {
+   struct object *obj_begin = objpool->arr,
+                 *obj_end = obj_begin + objpool->cnt;
+   for (struct object *obj_it = obj_begin; obj_it != obj_end; ++obj_it) {
+      if (obj_it->obj_special) {
+         obj_it->obj_special(obj_it);
+      }
+   }
+}
+
 /////////////// SCREEN ///////////////
 static struct object g_obj_screen =
    {.obj_kind = OBJ_K_BOUNDED,
@@ -141,7 +152,8 @@ static struct object g_obj_screen =
      }
     },
     .obj_update = {{0}},
-    .obj_graphics = {.draw = NULL}
+    .obj_graphics = {.draw = NULL},
+    .obj_special = NULL
    };
 
 struct bounds screen_bnds = {.crds = {.x = 0,
@@ -155,7 +167,8 @@ struct bounds screen_bnds = {.crds = {.x = 0,
 static struct object g_obj_grid =
    {.obj_kind = OBJ_K_GRID,
     .obj_update = {{0}},
-    .obj_graphics = {.draw = grid_display_layer}
+    .obj_graphics = {.draw = grid_display_layer},
+    .obj_special = NULL
    };
 
 /* currently, only one byte per column */
@@ -194,7 +207,8 @@ static struct object g_obj_paddle =
      }
     },
     .obj_update = {{0}},
-    .obj_graphics = {.draw = paddle_draw}
+    .obj_graphics = {.draw = paddle_draw},
+    .obj_special = paddle_tick
    };
       
       
@@ -227,7 +241,8 @@ static struct object g_obj_ball =
      }
     },
     .obj_update = {{0}},
-    .obj_graphics = {.draw = ball_draw}
+    .obj_graphics = {.draw = ball_draw},
+    .obj_special = ball_special
    };
 
 struct bounds ball_pos = {.crds = {.x = 60, .y = 28},

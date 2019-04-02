@@ -115,7 +115,7 @@ size:  $(TARGET).elf
 	$(AVRSIZE) -C --mcu=$(MCU) $(TARGET).elf
 
 syms:  $(TARGET).elf
-	$(NM) -S -t d $(TARGET).elf | awk '{ if (NF == 4) { print $0 }}' | cut -f 2,4 -d " " | sort -k 1 -r
+	$(NM) -S -t d $(TARGET).elf | grep -vi "[[:space:]]d[[:space:]]" | awk '{ if (NF == 4) { print $0 }}' | cut -f 2,4 -d " " | sort -k 1 -r
 
 clean:
 	rm -f $(TARGET).elf $(TARGET).hex $(TARGET).obj \

@@ -43,6 +43,7 @@ void paddle_draw(uint8_t *buf, const struct object *paddle, const struct bounds 
    }
 }
 
+#if 0
 void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
                  struct bounds *update) {
    touch_t touch = bounds_touch(&screen_bnds, paddle_bnds);
@@ -61,3 +62,10 @@ void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
    phys_flip_velocity(dv, paddle_vel);
    phys_object_freemove(paddle_bnds, paddle_vel, update);
 }
+#else
+void paddle_tick(struct object *paddle) {
+   if (button_get_press()) {
+      phys_flip_velocity(VEL_X, &paddle->obj_un.obj_bnded.obj_vel);
+   }
+}
+#endif
