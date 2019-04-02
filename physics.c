@@ -54,12 +54,8 @@ void phys_ball_freebounce(struct bounds *ball_pos,
                           struct bounds *update) {
 
    /* check velocity deflections  */
-#if 1
    uint8_t velmask = velocity_mask(ball_vel);
    ball_collide(ball_pos, ball_vel, velmask);
-#else
-   // obj_bnded_detect_collision(
-#endif
    
    /* initialize update bounds */
    struct bounds ball_pos_old;
@@ -83,6 +79,13 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
 
    /* if no contact, then there will be no collision with grid */
    if (touch == TOUCH_NONE) {
+      return VEL_NONE;
+   }
+   
+   /* or if the contact is not in the same direction as the object's velocity,
+    * there will be no collision */
+   uint8_t velmask = velocity_mask(vel);
+   if (phys_touch_velocity(touch, velmask) == VEL_NONE) {
       return VEL_NONE;
    }
 

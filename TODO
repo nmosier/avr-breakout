@@ -1,7 +1,7 @@
 TODO
 
-* connect keyboard code.
-* write interrupt handler triggered by timer to update ball, etc.
+1. Add grid back in.
+
 
 Object Collision
 - passive: function pointer -- handle collisions of other objects into this object.

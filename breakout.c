@@ -13,14 +13,10 @@
 #include "button.h"
 #include "paddle.h"
 
-#if 0
-static void loop(uint8_t should_display, struct bounds *update_arr);
-#else
 static void loop(uint8_t should_display);
-#endif
 static uint8_t check_game_over(void);
 
-#define UPDATE_PERIOD 2
+#define UPDATE_PERIOD 1
 #define GAME_NEVER_ENDS 1
 
 
@@ -66,7 +62,6 @@ static void loop(uint8_t should_display) {
       objpool_update(&g_objpool);
    }
 }
-#endif
 
 static uint8_t check_game_over(void) {
    uint8_t touch = bounds_touch(&ball_pos, &screen_bnds);

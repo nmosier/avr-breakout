@@ -27,6 +27,7 @@ inline uint8_t grid_testblock(uint8_t row, uint8_t col) {
 
 void grid_displayblock(uint8_t row, uint8_t col);
 void grid_display_full();
+void grid_display_layer(uint8_t *buf, const struct object *obj, const struct bounds *bnds);
 
 void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds);
 void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,

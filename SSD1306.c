@@ -17,11 +17,13 @@ void display_config() {
    SPI_MOSI_DDR |= (1 << SPI_MOSI);
    SPI_MISO_PORT |= (1 << SPI_MISO);
    SPI_SCK_DDR |= (1 << SPI_SCK);
-   SPCR |= (1 << SPR1);
+   // SPCR |= (1 << SPR1);
+   SPCR &= ~(1 << SPR1); /* highest possible frequency:      */
+   SPCR &= ~(1 << SPR0); /* (SPR1, SPR0) = (0,0) = f_OSC / 4 */
    SPCR |= (1 << MSTR);
    SPCR |= (1 << SPE);
    SPI_SCK_PORT &= ~(1 << SPI_SCK);
-
+   
    /* config SSD1306 pins */
    SSD1306_DC_DDR |= (1 << SSD1306_DC);
    SSD1306_RST_DDR |= (1 << SSD1306_RST);

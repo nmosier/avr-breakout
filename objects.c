@@ -12,6 +12,7 @@
 #include "SSD1306.h"
 #include "objects.h"
 #include "physics.h"
+#include "canvas.h"
 #include "util.h"
 #include "ball.h"
 #include "paddle.h"
@@ -30,11 +31,14 @@ static void object_update(struct object *obj);
 struct object_pool g_objpool;
 void objpool_init(struct object_pool *objpool) {
    objpool->arr[0] = g_obj_screen;
-   // objpool->arr[2] = g_obj_grid;
+   objpool->arr[1] = g_obj_grid;
    objpool->arr[2] = g_obj_paddle;
-   objpool->arr[1] = g_obj_ball;
-
-   objpool->cnt = 3;
+   objpool->arr[3] = g_obj_ball;
+   objpool->arr[4] = g_obj_ball; objpool->arr[4].obj_un.obj_bnded.obj_bnds.crds.x += 10;
+   objpool->arr[5] = g_obj_ball; objpool->arr[5].obj_un.obj_bnded.obj_bnds.crds.x += 20;
+   objpool->arr[6] = g_obj_ball; objpool->arr[6].obj_un.obj_bnded.obj_bnds.crds.x += 30;
+   objpool->arr[7] = g_obj_ball; objpool->arr[7].obj_un.obj_bnded.obj_bnds.crds.x += 40;
+   objpool->cnt = 6;
 }
 
 
@@ -56,14 +60,33 @@ static void objpool_interact_pair(struct object *obj1, struct object *obj2) {
    uint8_t obj1_k = obj1->obj_kind,
            obj2_k = obj2->obj_kind;
    touch_t touch;
+   uint8_t flip;
 
    /* detect collision & collide */
-   if (obj1_k == OBJ_K_BOUNDED && obj2_k == OBJ_K_BOUNDED) {
-      touch = obj_bnded_detect_collision(obj1, obj2);
-      obj_bnded_collide(obj1, obj2, touch);
-   } else {
-      /* NOT YET IMPLEMENTED */
-      touch = TOUCH_NONE;
+   switch (obj1_k) {
+   case OBJ_K_BOUNDED:
+      {
+         switch (obj2_k) {
+         case OBJ_K_BOUNDED: // collide bounded objects
+            touch = obj_bnded_detect_collision(obj1, obj2);
+            obj_bnded_collide(obj1, obj2, touch);
+            break;
+            
+         case OBJ_K_GRID: // collide bounded object with grid
+            flip = phys_grid_deflect(&obj1->obj_un.obj_bnded.obj_bnds,
+                                     &obj1->obj_un.obj_bnded.obj_vel);
+            phys_flip_velocity(flip, &obj1->obj_un.obj_bnded.obj_vel);
+            break;
+            
+         default: // do nothing
+            break;
+         }
+      }
+      break;
+
+   case OBJ_K_GRID:
+   default: // do nothing
+      break; 
    }
 }
 
@@ -131,7 +154,8 @@ struct bounds screen_bnds = {.crds = {.x = 0,
 
 static struct object g_obj_grid =
    {.obj_kind = OBJ_K_GRID,
-    .obj_update = {{0}}
+    .obj_update = {{0}},
+    .obj_graphics = {.draw = grid_display_layer}
    };
 
 /* currently, only one byte per column */
@@ -189,7 +213,7 @@ static struct object g_obj_ball =
      {.obj_bnds =
       {.crds =
        {.x = (DISPLAY_WIDTH - BALL_WIDTH) / 2,
-        .y = DISPLAY_HEIGHT - PADDLE_HEIGHT - BALL_HEIGHT - 1
+        .y = DISPLAY_HEIGHT - PADDLE_HEIGHT - BALL_HEIGHT - 5
        },
        .ext =
        {.w = BALL_WIDTH,
