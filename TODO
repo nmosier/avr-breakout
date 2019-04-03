@@ -1,7 +1,10 @@
 TODO
 
-1. Create global cleanup update queue for objpool.
-2. Factor out iteration in various objpool methods.
+-2. (TODO) use canvas_fill_rectangle for drawing paddle, of course!
+-1. (TODO) canvas_fill_rectangle should take BOUNDS as parameter.
+0. (TODO) Factor out commonalities for project_round and project_down.
+1. (TODO) Create global cleanup update queue for objpool.
+2. (TODO) redefine object definitions as macros.
 
 Object Collision
 - passive: function pointer -- handle collisions of other objects into this object.

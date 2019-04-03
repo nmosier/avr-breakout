@@ -1,6 +1,2 @@
-BREAKOUT
-
-
-GRAPHICS
- - buffer frames are drawn to using an array of drawing functions
- - updates are requested as return values from `physics' functions
+size with separate interaction -- 3840 bytes
+size with sloppy, mapped interaction -- 3796 bytes
