@@ -29,7 +29,6 @@ int main(void) {
    display_config(); // these names should really be swapped
    SLAVE_SELECT; // Always have slave selected
    display_init();
-   objpool_init(&g_objpool);
 
    display_clear(0x00); // clear display
    
