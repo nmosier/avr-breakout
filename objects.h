@@ -5,8 +5,8 @@
 #define __OBJECTS_H
 
 #include <stdint.h>
+#include <stdarg.h>
 #include "SSD1306.h"
-//#include "canvas.h"
 #include "util.h"
 
 //////////// OBJECT ////////////
@@ -40,14 +40,47 @@ struct object_pool {
    uint8_t cnt;
 };
 extern struct object_pool g_objpool;
-void objpool_init(struct object_pool *objpool);
-void objpool_move(struct object_pool *objpool);
-void objpool_update(struct object_pool *objpool);
+typedef void (*objpool_map_func_t)(struct object *obj);
 void objpool_interact(struct object_pool *objpool);
-void objpool_special(struct object_pool *objpool);
+void objpool_map(struct object_pool *objpool, objpool_map_func_t func);
+void object_move(struct object *obj);
+void object_update(struct object *obj);
+void object_special(struct object *obj);
+
+inline void objpool_update(struct object_pool *objpool);
+inline void objpool_move(struct object_pool *objpool);
+inline void objpool_special(struct object_pool *objpool);
+
+inline void objpool_update(struct object_pool *objpool) {
+   objpool_map(objpool, object_update);
+}
+inline void objpool_move(struct object_pool *objpool) {
+   objpool_map(objpool, object_move);
+}
+inline void objpool_special(struct object_pool *objpool) {
+   objpool_map(objpool, object_special);
+}
+
 
 //////////// SCREEN ///////////
 extern struct bounds screen_bnds;
+
+#define OBJ_SCREEN_DEF(width, height)       \
+   {.obj_kind = OBJ_K_BOUNDED,              \
+    .obj_un =                               \
+    {.obj_bnded =                           \
+     {.obj_bnds =                           \
+      {.crds = {.x = 0, .y = 0},            \
+       .ext = {.w = width, .h = height}     \
+      },                                    \
+      .obj_vel = {.vx = 0, .vy = 0},        \
+     }                                      \
+    },                                      \
+    .obj_update = {{0}},                    \
+    .obj_graphics = {.draw = NULL},         \
+    .obj_special = NULL                     \
+   }
+
 
 /////////// GRID ////////////////
 #define GRID_BLOCK_WIDTH  8
@@ -60,19 +93,83 @@ extern struct bounds screen_bnds;
 
 extern uint8_t grid[GRID_HEIGHT_BYTES][GRID_WIDTH_BYTES];
 
+#define OBJ_GRID_DEF                             \
+   {.obj_kind = OBJ_K_GRID,                      \
+    .obj_update = {{0}},                         \
+    .obj_graphics = {.draw = grid_display_layer},\
+    .obj_special = NULL                          \
+   }
+
 ////////// PADDLE ////////////////
 #define PADDLE_WIDTH 16
 #define PADDLE_HEIGHT 4
 #define PADDLE_ROW   (DISPLAY_HEIGHT - PADDLE_HEIGHT)
+#define PADDLE_COL   ((DISPLAY_WIDTH - PADDLE_WIDTH) / 2)
+#define PADDLE_VX  1
+#define PADDLE_VY  0
 
 extern struct bounds paddle_pos;
 extern struct velocity paddle_vel;
 
+#define OBJ_PADDLE_DEF(x_, y_, w_, h_, vx_, vy_)    \
+   {.obj_kind = OBJ_K_BOUNDED,            \
+    .obj_un =                             \
+    {.obj_bnded =                         \
+     {.obj_bnds =                         \
+      {.crds =                            \
+       {.x = x_,                           \
+        .y = y_                            \
+       },                                 \
+       .ext =                             \
+       {.w = w_,                           \
+        .h = h_                            \
+       }                                  \
+      },                                  \
+      .obj_vel =                          \
+      {.vx = vx_,                           \
+       .vy = vy_                            \
+      }                                   \
+     }                                    \
+    },                                    \
+    .obj_update = {{0}},                  \
+    .obj_graphics = {.draw = paddle_draw},\
+    .obj_special = paddle_tick            \
+   }
+
 //////////// BALL /////////////////
 #define BALL_WIDTH  4
 #define BALL_HEIGHT 4
+#define BALL_COL    ((DISPLAY_WIDTH - BALL_WIDTH) / 2)
+#define BALL_ROW    ((DISPLAY_HEIGHT - BALL_HEIGHT) / 2)
+#define BALL_VX     1
+#define BALL_VY     1
 
 extern struct bounds ball_pos;
 extern struct velocity ball_vel; // in pixels/sec
+
+#define OBJ_BALL_DEF(x_, y_, w_, h_, vx_, vy_)        \
+   {.obj_kind = OBJ_K_BOUNDED,                  \
+      .obj_un =                                 \
+      {.obj_bnded =                             \
+      {.obj_bnds =                              \
+         {.crds =                               \
+         {.x = x_,                               \
+          .y = y_                                \
+         },                                     \
+      .ext =                                    \
+            {.w = w_,                            \
+      .h = h_                                    \
+      }                                         \
+       },                                       \
+      .obj_vel =                                \
+         {.vx = vx_,                             \
+          .vy = vy_                             \
+         }                                      \
+          }                                     \
+           },                                   \
+    .obj_update = {{0}},                        \
+        .obj_graphics = {.draw = ball_draw},    \
+        .obj_special = ball_special             \
+        }                                      
 
 #endif

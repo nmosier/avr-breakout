@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
 #include "canvas.h"
 #include "SSD1306.h"
 #include "objects.h"
@@ -24,37 +25,19 @@ static struct object g_obj_paddle;
 static struct object g_obj_ball;
 
 static void objpool_interact_pair(struct object *obj1, struct object *obj2);
-static void object_move(struct object *obj);
-static void object_update(struct object *obj);
 
 //////////// OBJECTS ////////////
 /* object pool */
-struct object_pool g_objpool;
-void objpool_init(struct object_pool *objpool) {
-   objpool->arr[0] = g_obj_screen;
-   objpool->arr[1] = g_obj_grid;
-   objpool->arr[2] = g_obj_paddle;
-   objpool->arr[3] = g_obj_ball;
-   objpool->arr[4] = g_obj_ball; objpool->arr[4].obj_un.obj_bnded.obj_bnds.crds.x += 10;
-   objpool->arr[5] = g_obj_ball; objpool->arr[5].obj_un.obj_bnded.obj_bnds.crds.x += 20;
-   objpool->arr[6] = g_obj_ball; objpool->arr[6].obj_un.obj_bnded.obj_bnds.crds.x += 30;
-   objpool->arr[7] = g_obj_ball; objpool->arr[7].obj_un.obj_bnded.obj_bnds.crds.x += 40;
-   objpool->cnt = 6;
-}
-
-
-/* object interaction */
-void objpool_interact(struct object_pool *objpool) {
-   struct object *obj_begin = objpool->arr,
-                 *obj_end = obj_begin + objpool->cnt;
-   for (struct object *obj_i = obj_begin; obj_i != obj_end; ++obj_i) {
-      for (struct object *obj_j = obj_begin; obj_j != obj_end; ++obj_j) {
-         if (obj_i != obj_j) {
-            objpool_interact_pair(obj_i, obj_j);
-         }
-      }
-   }
-}
+struct object_pool g_objpool =
+   {.arr = {[0] = OBJ_SCREEN_DEF(DISPLAY_WIDTH, DISPLAY_HEIGHT),
+            [1] = OBJ_GRID_DEF,
+            [2] = OBJ_PADDLE_DEF(PADDLE_COL, PADDLE_ROW, PADDLE_WIDTH, PADDLE_HEIGHT, 1, 1),
+            [3] = OBJ_BALL_DEF(BALL_COL, BALL_ROW, BALL_WIDTH, BALL_HEIGHT, BALL_VX, BALL_VY),
+            [4] = OBJ_BALL_DEF(BALL_COL - 20, BALL_ROW + 5, BALL_WIDTH * 2, BALL_HEIGHT * 2, -1, 1),
+            [5] = OBJ_BALL_DEF(BALL_COL + 20, BALL_ROW + 5, BALL_WIDTH * 3, BALL_HEIGHT * 3, -1, -1),
+            [6] = OBJ_BALL_DEF(BALL_COL - 10, BALL_ROW - 10, BALL_WIDTH / 2, BALL_HEIGHT / 2, 1, 1)
+            },
+    .cnt = 7};
 
 /* interact a pair of objects */
 static void objpool_interact_pair(struct object *obj1, struct object *obj2) {
@@ -91,22 +74,7 @@ static void objpool_interact_pair(struct object *obj1, struct object *obj2) {
    }
 }
 
-/* NOTE: works on ALL kinds of objects. */
-static void object_move(struct object *obj) {
-   switch (obj->obj_kind) {
-   case OBJ_K_BOUNDED:
-      bounds_union_pair(&obj->obj_un.obj_bnded.obj_bnds, &obj->obj_update, &obj->obj_update);
-      obj->obj_un.obj_bnded.obj_bnds.crds.x += obj->obj_un.obj_bnded.obj_vel.vx;
-      obj->obj_un.obj_bnded.obj_bnds.crds.y += obj->obj_un.obj_bnded.obj_vel.vy;
-      bounds_union_pair(&obj->obj_un.obj_bnded.obj_bnds, &obj->obj_update, &obj->obj_update);
-      break;
-      
-   case OBJ_K_GRID:
-   default:
-      break;
-   }
-}
-
+#if 0
 void objpool_move(struct object_pool *objpool) {
    struct object *obj_begin = objpool->arr,
                  *obj_end = obj_begin + objpool->cnt;
@@ -115,11 +83,6 @@ void objpool_move(struct object_pool *objpool) {
    }
 }
 
-/* object_update: display changes due to object on screen and reset update bounds. */
-static void object_update(struct object *obj) {
-   display_update(&obj->obj_update);
-   memset(&obj->obj_update, 0, sizeof(obj->obj_update));
-}
 
 void objpool_update(struct object_pool *objpool) {
    struct object *obj_begin = objpool->arr,
@@ -138,8 +101,60 @@ void objpool_special(struct object_pool *objpool) {
       }
    }
 }
+#endif
+
+void objpool_map(struct object_pool *objpool, objpool_map_func_t func) {
+   /* iterate over object pool array */
+   struct object *obj_begin = objpool->arr,
+                 *obj_end = obj_begin + objpool->cnt;
+   for (struct object *obj_it = obj_begin; obj_it != obj_end; ++obj_it) {
+      func(obj_it);
+   }
+}
+
+void object_update(struct object *obj) {
+   display_update(&obj->obj_update);
+   memset(&obj->obj_update, 0, sizeof(obj->obj_update));
+}
+
+/* NOTE: works on ALL kinds of objects. */
+void object_move(struct object *obj) {
+   switch (obj->obj_kind) {
+   case OBJ_K_BOUNDED:
+      bounds_union_pair(&obj->obj_un.obj_bnded.obj_bnds, &obj->obj_update, &obj->obj_update);
+      obj->obj_un.obj_bnded.obj_bnds.crds.x += obj->obj_un.obj_bnded.obj_vel.vx;
+      obj->obj_un.obj_bnded.obj_bnds.crds.y += obj->obj_un.obj_bnded.obj_vel.vy;
+      bounds_union_pair(&obj->obj_un.obj_bnded.obj_bnds, &obj->obj_update, &obj->obj_update);
+      break;
+      
+   case OBJ_K_GRID:
+   default:
+      break;
+   }
+}
+
+void object_special(struct object *obj) {
+   if (obj->obj_special) {
+      obj->obj_special(obj);
+   }
+}
+
+/* object interaction */
+void objpool_interact(struct object_pool *objpool) {
+   struct object *obj_begin = objpool->arr,
+                 *obj_end = obj_begin + objpool->cnt;
+   for (struct object *obj_i = obj_begin; obj_i != obj_end; ++obj_i) {
+      for (struct object *obj_j = obj_begin; obj_j != obj_end; ++obj_j) {
+         if (obj_i != obj_j) {
+            objpool_interact_pair(obj_i, obj_j);
+         }
+      }
+   }
+}
 
 /////////////// SCREEN ///////////////
+
+
 static struct object g_obj_screen =
    {.obj_kind = OBJ_K_BOUNDED,
     .obj_un =
@@ -219,6 +234,7 @@ struct bounds paddle_pos = {.crds = {.x = (DISPLAY_WIDTH - PADDLE_WIDTH) / 2,
 struct velocity paddle_vel = {.vx = 2, .vy = 0};
 
 //////////////// BALL  ///////////////
+
 
 static struct object g_obj_ball =
    {.obj_kind = OBJ_K_BOUNDED,
