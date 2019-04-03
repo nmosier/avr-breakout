@@ -13,7 +13,7 @@
 void ball_draw(uint8_t *buf, const struct object *ball, const struct bounds *bnds) {
    const struct bounds *ball_pos = &ball->obj_un.obj_bnded.obj_bnds;
    canvas_fill_rectangle(buf, bnds, ball_pos->crds.x, ball_pos->crds.y,
-                         BALL_WIDTH, BALL_HEIGHT);
+                         ball_pos->ext.w, ball_pos->ext.h);
 }
 
 void ball_special(struct object *ball) {
