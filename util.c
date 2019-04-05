@@ -7,17 +7,19 @@
 #include "SSD1306.h"
 #include "util.h"
 
+/* static prototypes */
+static void bounds_compare_components(const struct bounds *bnds1, const struct bounds *bnds2,
+                                      uint8_t *cmp_x, uint8_t *cmp_y);
+
+
+// TODO: this can be space-optimized.
 touch_t bounds_touch(const struct bounds * restrict bnds1,
                      const struct bounds * restrict bnds2) {
 
    touch_t mask = TOUCH_NONE;
-   uint8_t cmp_x = (umax8(bnds1->crds.x, bnds2->crds.x) <
-                    umin8(bnds1->crds.x + bnds1->ext.w,
-                          bnds2->crds.x + bnds2->ext.w));
-   uint8_t cmp_y = (umax8(bnds1->crds.y, bnds2->crds.y) <
-               umin8(bnds1->crds.y + bnds1->ext.h,
-                     bnds2->crds.y + bnds2->ext.h));
-
+   uint8_t cmp_x, cmp_y;
+   bounds_compare_components(bnds1, bnds2, &cmp_x, &cmp_y);
+   
    uint8_t bnds_x[2][2] =
       {{bnds1->crds.x, bnds1->crds.x + bnds1->ext.w},
        {bnds2->crds.x, bnds2->crds.x + bnds2->ext.w}};
@@ -25,21 +27,25 @@ touch_t bounds_touch(const struct bounds * restrict bnds1,
       {{bnds1->crds.y, bnds1->crds.y + bnds1->ext.h},
        {bnds2->crds.y, bnds2->crds.y + bnds2->ext.h}};
 
-   
-   for (uint8_t j = 0; j < 2; ++j) {
-      for (uint8_t i = 0; i < 2; ++i) {
-         if (cmp_y && bnds_x[0][j] == bnds_x[1][i]) {
-            /* equal bounds and other dimension overlaps */
-            mask |= (i == 0) ? TOUCH_LEFT : TOUCH_RIGHT;
+
+   if (cmp_y) {
+      for (uint8_t j = 0; j < 2; ++j) {
+         for (uint8_t i = 0; i < 2; ++i) {
+            if (bnds_x[0][j] == bnds_x[1][i]) {
+               /* equal bounds and other dimension overlaps */
+               mask |= (i == 0) ? TOUCH_LEFT : TOUCH_RIGHT;
+            }
          }
       }
    }
 
-   for (uint8_t j = 0; j < 2; ++j) {
-      for (uint8_t i = 0; i < 2; ++i) {
-         if (cmp_x && bnds_y[0][j] == bnds_y[1][i]) {
-            /* equal bounds and other dimension overlaps */
-            mask |= (i == 0) ? TOUCH_UP : TOUCH_DOWN;
+   if (cmp_x) {
+      for (uint8_t j = 0; j < 2; ++j) {
+         for (uint8_t i = 0; i < 2; ++i) {
+            if (bnds_y[0][j] == bnds_y[1][i]) {
+               /* equal bounds and other dimension overlaps */
+               mask |= (i == 0) ? TOUCH_UP : TOUCH_DOWN;
+            }
          }
       }
    }
@@ -93,16 +99,31 @@ void bounds_union(struct bounds *un, ...) {
    va_end(ap);
 }
 
-void bounds_insersect(const struct bounds *bnds1, const struct bounds *bnds2,
-                      struct bounds *intersect) {
-   intersect->crds.x = umax8(bnds1->crds.x, bnds2->crds.x);
-   intersect->crds.y = umax8(bnds1->crds.y, bnds2->crds.y);
-   intersect->ext.w = umin8(bnds1->crds.x + bnds1->ext.w,
-                            bnds2->crds.x + bnds2->ext.w) - intersect->crds.x;
-   intersect->ext.h = umin8(bnds1->crds.y + bnds1->ext.h,
-                            bnds2->crds.y + bnds2->ext.h) - intersect->crds.y;
+static void bounds_compare_components(const struct bounds *bnds1, const struct bounds *bnds2,
+                                      uint8_t *cmp_x, uint8_t *cmp_y) {
+   *cmp_x = (umax8(bnds1->crds.x, bnds2->crds.x) <
+                    umin8(bnds1->crds.x + bnds1->ext.w,
+                          bnds2->crds.x + bnds2->ext.w));
+   *cmp_y = (umax8(bnds1->crds.y, bnds2->crds.y) <
+             umin8(bnds1->crds.y + bnds1->ext.h,
+                   bnds2->crds.y + bnds2->ext.h));   
 }
 
+uint8_t bounds_intersect(const struct bounds *bnds1, const struct bounds *bnds2) {
+   uint8_t cmp_x, cmp_y;
+   bounds_compare_components(bnds1, bnds2, &cmp_x, &cmp_y);
+   return cmp_x && cmp_y;
+}
+
+#if 0
+uint8_t bounds_cut(const struct bounds * restrict bnds1, const struct bounds * restrict bnds2) {
+   if (bounds_intersect(bnds1, bnds2)) {
+      return bnds1->
+   } else {
+      return 0;
+   }
+}
+#endif
 
 
 /* bounds_should_union: would it be advantageous to union the two given display bounds,
@@ -116,7 +137,8 @@ uint8_t bounds_should_union(const struct bounds *bnds1,
 
    memset(un, 0, sizeof(*un));
    bounds_union(un, bnds1, bnds2);
-   
+
+   /* TODO: probably don't need to cast, due to properties of modulo arithmetic. */
    dA = (int) bounds_area(un) - (int) bounds_area(bnds1) - (int) bounds_area(bnds2);
 
    /* divide by 8 b/c bounds not yet downsized for display */

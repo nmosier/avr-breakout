@@ -13,6 +13,8 @@
 #include "button.h"
 
 #define PADDLE_MASK 0xf0
+
+#if 0
 void paddle_draw(uint8_t *buf, const struct object *paddle, const struct bounds *bnds) {
    uint8_t paddle_page;
    uint8_t buf_page;
@@ -43,29 +45,16 @@ void paddle_draw(uint8_t *buf, const struct object *paddle, const struct bounds 
    }
 }
 
-#if 0
-void paddle_tick(struct bounds *paddle_bnds, struct velocity *paddle_vel,
-                 struct bounds *update) {
-   touch_t touch = bounds_touch(&screen_bnds, paddle_bnds);
-   uint8_t dv = VEL_NONE;
-
-   /* check if at edge of screen */
-   if ((touch & TOUCH_LEFT) || (touch & TOUCH_RIGHT)) {
-      dv |= VEL_X;
-   }
-
-   /* check if button pressed */
-   if (button_get_press()) {
-      dv |= VEL_X;
-   }
-   
-   phys_flip_velocity(dv, paddle_vel);
-   phys_object_freemove(paddle_bnds, paddle_vel, update);
-}
 #else
+
+void paddle_draw(uint8_t *buf, const struct object *paddle, const struct bounds *bnds) {
+   canvas_fill_rectangle(buf, bnds, &paddle->obj_un.obj_bnded.obj_bnds);
+}
+
+#endif
+
 void paddle_tick(struct object *paddle) {
    if (button_get_press()) {
       phys_flip_velocity(VEL_X, &paddle->obj_un.obj_bnded.obj_vel);
    }
 }
-#endif

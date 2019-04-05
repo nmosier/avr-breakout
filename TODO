@@ -1,7 +1,13 @@
 TODO
 
--2. (TODO) use canvas_fill_rectangle for drawing paddle, of course!
--1. (TODO) canvas_fill_rectangle should take BOUNDS as parameter.
+*** fix reflection ***
+- advance bounds
+- check if they overlap
+- if so, reflect velocity
+And that's all there is to it! If it's done with a step of 1 pixel, then this will work UNLESS
+an object is 1 pixel in size. But who the fuck cares about 1-pixel objects?!
+
+
 0. (TODO) Factor out commonalities for project_round and project_down.
 1. (TODO) Create global cleanup update queue for objpool.
 2. (TODO) redefine object definitions as macros.
@@ -21,4 +27,7 @@ Object pool: contains array of all objects. At each tick, each object is collide
              objects and then its velocity is updated.
 
 
-WAIT. The objects needn't even have bounds. Need to distinguish between the types.
+#### FRACS ####
+- Don't need to reduce.
+- Do need to compare fractions (for velocity-ticking).
+

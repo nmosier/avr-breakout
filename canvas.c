@@ -146,10 +146,18 @@ void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,
    }
 }
 
-void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
+void canvas_fill_rectangle_old(uint8_t *buf, const struct bounds *bnds,
                            uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
    for (uint8_t dx = 0; dx < w; ++dx) {
       canvas_draw_vertical(buf, bnds, x + dx, y, y + h);
+   }
+}
+
+void canvas_fill_rectangle(uint8_t *buf, const struct bounds *canvas_bnds,
+                           const struct bounds *obj_bnds) {
+   for (uint8_t dx = 0; dx < obj_bnds->ext.w; ++dx) {
+      canvas_draw_vertical(buf, canvas_bnds, obj_bnds->crds.x + dx, obj_bnds->crds.y,
+                           obj_bnds->crds.y + obj_bnds->ext.h);
    }
 }
 

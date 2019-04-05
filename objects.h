@@ -54,9 +54,11 @@ inline void objpool_special(struct object_pool *objpool);
 inline void objpool_update(struct object_pool *objpool) {
    objpool_map(objpool, object_update);
 }
+
 inline void objpool_move(struct object_pool *objpool) {
    objpool_map(objpool, object_move);
 }
+
 inline void objpool_special(struct object_pool *objpool) {
    objpool_map(objpool, object_special);
 }

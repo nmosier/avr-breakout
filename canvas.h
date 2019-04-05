@@ -32,8 +32,10 @@ void grid_display_layer(uint8_t *buf, const struct object *obj, const struct bou
 void canvas_getbuffer(uint8_t *buf, const struct bounds *bnds);
 void canvas_draw_vertical(uint8_t *buf, const struct bounds *bnds,
                           uint8_t col, uint8_t begin, uint8_t end);
-void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
-                           uint8_t x, uint8_t y, uint8_t w, uint8_t h);
+//void canvas_fill_rectangle(uint8_t *buf, const struct bounds *bnds,
+//                           uint8_t x, uint8_t y, uint8_t w, uint8_t h);
+void canvas_fill_rectangle(uint8_t *buf, const struct bounds *canvas_bnds,
+                           const struct bounds *obj_bnds);
 
 void bounds_create(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
                    struct bounds *bnds);

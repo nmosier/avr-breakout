@@ -47,6 +47,7 @@ void ball_collide(const struct bounds *pos, struct velocity *vel, uint8_t velmas
    phys_flip_velocity(flip, vel);
 }
 
+#if 0
 /* phys_ball_freebounce: Bounce ball around on screen unobstructed. */
 // TODO: abstract away velocity deflections to abstract interface.
 void phys_ball_freebounce(struct bounds *ball_pos,
@@ -67,6 +68,7 @@ void phys_ball_freebounce(struct bounds *ball_pos,
    /* insert new position into blist */
    bounds_union(update, &ball_pos_old, ball_pos, NULL);
 }
+#endif
 
 uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    struct bounds block_bnds;
@@ -135,7 +137,7 @@ uint8_t phys_grid_deflect(const struct bounds *bnds, struct velocity *vel) {
    return flip;
 }
 
-#if 1
+#if 0
 void phys_object_freemove(struct bounds *obj, const struct velocity *vel,
                       struct bounds *update) {
 
